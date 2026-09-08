@@ -1,0 +1,6 @@
+servlet\BoardServlet.class
+servlet\CommentServlet.class
+common\DBConn.class
+servlet\AuthServlet.class
+servlet\JoinServlet.class
+servlet\LoginServlet.class

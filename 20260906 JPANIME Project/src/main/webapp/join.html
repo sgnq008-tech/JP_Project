@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="joinTitle">会員登録</title>
+  <style>
+    /* 会員登録画面のスタイル定義 */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f4f6f9;
+    }
+    .container {
+      background-color: white;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 320px;
+    }
+    .brand-title {
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #e63946;
+      margin-bottom: 5px;
+    }
+    .lang-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+    .lang-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid #e63946;
+      background-color: white;
+      color: #e63946;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .lang-btn.active {
+      background-color: #e63946;
+      color: white;
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #1d3557;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .error-msg {
+      color: #e74c3c;
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 10px;
+      background-color: #e63946;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .btn-submit:hover {
+      background-color: #c92a36;
+    }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .link a {
+      color: #1d3557;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand-title" data-i18n="siteBrand">🎬 アニログ (AniLog)</div>
+
+    <!-- 言語切り替えグループ -->
+    <div class="lang-group">
+      <span style="font-size: 12px; margin-top: 2px;">🌐</span>
+      <button type="button" class="lang-btn" id="btnJa" onclick="switchLang('ja')">日本語</button>
+      <button type="button" class="lang-btn" id="btnKo" onclick="switchLang('ko')">한국어</button>
+      <button type="button" class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
+    </div>
+
+    <h2 data-i18n="joinTitle">会員登録</h2>
+    <div id="errorMsg" class="error-msg"></div>
+
+    <!-- 会員登録リクエストフォーム -->
+    <form action="api/join" method="post">
+      <div class="form-group">
+        <label for="userId" data-i18n="userId">ユーザーID</label>
+        <input type="text" id="userId" name="userId" data-i18n-placeholder="idPlaceholder" placeholder="ユーザーIDを入力" required>
+      </div>
+
+      <div class="form-group">
+        <label for="userPw" data-i18n="userPw">パスワード</label>
+        <input type="password" id="userPw" name="userPw" data-i18n-placeholder="pwPlaceholder" placeholder="パスワードを入力" required>
+      </div>
+
+      <div class="form-group">
+        <label for="userName" data-i18n="userName">お名前</label>
+        <input type="text" id="userName" name="userName" data-i18n-placeholder="namePlaceholder" placeholder="お名前を入力" required>
+      </div>
+
+      <button type="submit" class="btn-submit" data-i18n="joinCompleteBtn">登録完了</button>
+    </form>
+
+    <div class="link">
+      <span data-i18n="hasAccount">既にアカウントをお持ちですか？</span> 
+      <a href="login.html" data-i18n="goToLogin">ログインはこちら</a>
+    </div>
+  </div>
+
+  <script src="lang.js"></script>
+  <script>
+    // 言語切り替え
+    function switchLang(lang) {
+      changeLanguage(lang);
+      updateErrorMessage();
+    }
+
+    // 会員登録エラーメッセージの判定と表示
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get("error");
+    const errorDiv = document.getElementById("errorMsg");
+
+    function updateErrorMessage() {
+      if (!error) return;
+      const messages = {
+        ja: { duplicate: "既に存在するユーザーIDです。", empty: "すべての項目を入力してください。", default: "登録中にエラーが発生しました。" },
+        ko: { duplicate: "이미 존재하는 아이디입니다.", empty: "모든 항목을 입력해 주세요.", default: "가입 처리 오류가 발생했습니다." },
+        en: { duplicate: "This username already exists.", empty: "Please fill in all fields.", default: "An error occurred during registration." }
+      };
+      const map = messages[currentLang] || messages.ja;
+      errorDiv.innerText = map[error] || map.default;
+      errorDiv.style.display = "block";
+    }
+
+    document.addEventListener("DOMContentLoaded", updateErrorMessage);
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="editTitle">アニメレビューの編集</title>
+  <style>
+    /* 編集画面のスタイル定義 */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background-color: #f4f6f9;
+      display: flex;
+      justify-content: center;
+    }
+    .edit-container {
+      background-color: white;
+      width: 100%;
+      max-width: 650px;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e63946;
+      padding-bottom: 12px;
+    }
+    .header-bar h2 { margin: 0; color: #e63946; font-size: 20px; }
+    .lang-group { display: flex; gap: 5px; }
+    .lang-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid #e63946;
+      background-color: white;
+      color: #e63946;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .lang-btn.active { background-color: #e63946; color: white; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; color: #495057; font-size: 14px; }
+    input[type="text"], select, textarea, input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; min-height: 160px; }
+    .notice { font-size: 12px; color: #6c757d; margin-top: 4px; }
+    .preview-box {
+      margin-top: 10px;
+      text-align: center;
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px dashed #ced4da;
+    }
+    .preview-box img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 4px;
+    }
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 9px 18px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .btn-update { background-color: #1d3557; color: white; }
+    .btn-back { background-color: #6c757d; color: white; }
+  </style>
+</head>
+<body>
+  <div class="edit-container">
+    <div class="header-bar">
+      <h2 data-i18n="editTitle">アニメレビューの編集</h2>
+      <!-- 多言語切り替えエリア -->
+      <div class="lang-group">
+        <span style="font-size: 12px; margin-top: 2px;">🌐</span>
+        <button type="button" class="lang-btn" id="btnJa" onclick="changeLanguage('ja')">日本語</button>
+        <button type="button" class="lang-btn" id="btnKo" onclick="changeLanguage('ko')">한국어</button>
+        <button type="button" class="lang-btn" id="btnEn" onclick="changeLanguage('en')">EN</button>
+      </div>
+    </div>
+
+    <!-- 修正リクエストフォーム (multipart/form-data) -->
+    <form action="api/board" method="post" enctype="multipart/form-data">
+      <!-- 修正処理識別用の隠しフィールド -->
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" id="bno" name="bno" value="">
+      <input type="hidden" id="existingImage" name="existingImage" value="">
+
+      <div class="form-group">
+        <label for="animeTitle" data-i18n="animeTitleLabel">アニメ作品名</label>
+        <input type="text" id="animeTitle" name="animeTitle" required>
+      </div>
+
+      <div class="form-group">
+        <label for="rating" data-i18n="ratingLabel">評価（星評価）</label>
+        <select id="rating" name="rating">
+          <option value="5" data-i18n-opt="rating5">★★★★★ (5点 - 最高)</option>
+          <option value="4" data-i18n-opt="rating4">★★★★☆ (4点 - 良い)</option>
+          <option value="3" data-i18n-opt="rating3">★★★☆☆ (3点 - 普通)</option>
+          <option value="2" data-i18n-opt="rating2">★★☆☆☆ (2点 - 微妙)</option>
+          <option value="1" data-i18n-opt="rating1">★☆☆☆☆ (1点 - 不満)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="animeImage" data-i18n="imageLabel">アニメ画像・ポスター添付</label>
+        <input type="file" id="animeImage" name="animeImage" accept="image/*" onchange="previewNewImage(event)">
+        <div class="notice" data-i18n="keepImageNotice">※新しい画像を選択しない場合、既存の画像が維持されます。</div>
+        <div class="preview-box" id="previewBox" style="display: none;">
+          <img id="imgPreview" src="" alt="Preview">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="title" data-i18n="postTitleLabel">レビュータイトル</label>
+        <input type="text" id="title" name="title" required>
+      </div>
+
+      <div class="form-group">
+        <label for="content" data-i18n="postContentLabel">感想・レビュー本文</label>
+        <textarea id="content" name="content" required></textarea>
+      </div>
+
+      <div class="btn-row">
+        <a href="board.html" class="btn btn-back" data-i18n="backToList">一覧へ戻る</a>
+        <button type="submit" class="btn btn-update" data-i18n="updateBtn">修正を保存</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="lang.js"></script>
+  <script>
+    // URLクエリパラメータからbnoを取得して初期データをロード
+    const urlParams = new URLSearchParams(window.location.search);
+    const bno = urlParams.get('bno');
+
+    if (!bno) {
+      alert("不正なアクセスです。");
+      location.href = "board.html";
+    } else {
+      document.getElementById('bno').value = bno;
+      // 既存の投稿情報をAPIから取得
+      fetch(`api/board?bno=${bno}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data || !data.bno) {
+            alert("存在しないレビューです。");
+            location.href = "board.html";
+            return;
+          }
+          // フォームフィールドへ既存値を反映
+          document.getElementById('animeTitle').value = data.animeTitle || '';
+          document.getElementById('rating').value = data.rating || '5';
+          document.getElementById('title').value = data.title || '';
+          document.getElementById('content').value = data.content || '';
+          
+          // 既存画像が存在する場合はプレビューエリアに設定
+          if (data.imageFile && data.imageFile.trim() !== '') {
+            document.getElementById('existingImage').value = data.imageFile;
+            document.getElementById('imgPreview').src = `uploads/${data.imageFile}`;
+            document.getElementById('previewBox').style.display = 'block';
+          }
+        })
+        .catch(err => {
+          console.error("データロード失敗:", err);
+          location.href = "board.html";
+        });
+    }
+
+    // 新規画像選択時のリアルタイムプレビュー処理
+    function previewNewImage(event) {
+      const input = event.target;
+      const previewBox = document.getElementById('previewBox');
+      const imgPreview = document.getElementById('imgPreview');
+
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          imgPreview.src = e.target.result;
+          previewBox.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+</body>
+</html>
