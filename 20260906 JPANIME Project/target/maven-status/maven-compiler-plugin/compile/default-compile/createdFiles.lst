@@ -1,6 +1,10 @@
+common\ReviewIntelligence.class
 servlet\BoardServlet.class
 servlet\CommentServlet.class
 common\DBConn.class
+servlet\IntelligenceServlet.class
+common\DBTest.class
 servlet\AuthServlet.class
+common\ReviewIntelligence$AnalysisResult.class
 servlet\JoinServlet.class
 servlet\LoginServlet.class

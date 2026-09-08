@@ -18,13 +18,13 @@
     .container {
       background-color: white;
       padding: 30px 40px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      width: 320px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      width: 340px;
     }
     .brand-title {
       text-align: center;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: bold;
       color: #e63946;
       margin-bottom: 5px;
@@ -54,42 +54,80 @@
       margin-bottom: 20px;
       text-align: center;
       color: #1d3557;
+      font-size: 20px;
     }
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 14px;
+      position: relative;
     }
     label {
       display: block;
       margin-bottom: 5px;
-      font-size: 14px;
-      color: #555;
+      font-size: 13px;
+      font-weight: bold;
+      color: #495057;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
     input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 10px;
+      padding: 10px 36px 10px 10px;
       box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
       font-size: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #1d3557;
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      user-select: none;
+      color: #868e96;
+    }
+    .feedback-msg {
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+    .feedback-msg.error {
+      color: #e63946;
+      display: block;
+    }
+    .feedback-msg.success {
+      color: #2b9348;
+      display: block;
     }
     .error-msg {
-      color: #e74c3c;
-      font-size: 13px;
+      background-color: #ffe3e3;
+      border: 1px solid #ffc9c9;
+      color: #c92a2a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
       text-align: center;
       margin-bottom: 15px;
       display: none;
     }
     .btn-submit {
       width: 100%;
-      padding: 10px;
+      padding: 11px;
       background-color: #e63946;
       color: white;
       border: none;
-      border-radius: 4px;
-      font-size: 16px;
+      border-radius: 6px;
+      font-size: 15px;
       cursor: pointer;
       margin-top: 10px;
       font-weight: bold;
+      transition: background-color 0.2s;
     }
     .btn-submit:hover {
       background-color: #c92a36;
@@ -98,81 +136,180 @@
       text-align: center;
       margin-top: 15px;
       font-size: 13px;
+      color: #6c757d;
     }
     .link a {
       color: #1d3557;
       text-decoration: none;
       font-weight: bold;
+      margin-left: 4px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="brand-title" data-i18n="siteBrand">🎬 アニログ (AniLog)</div>
+<div class="container">
+  <div class="brand-title" data-i18n="siteBrand">🎬 アニログ (AniLog)</div>
 
-    <!-- 言語切り替えグループ -->
-    <div class="lang-group">
-      <span style="font-size: 12px; margin-top: 2px;">🌐</span>
-      <button type="button" class="lang-btn" id="btnJa" onclick="switchLang('ja')">日本語</button>
-      <button type="button" class="lang-btn" id="btnKo" onclick="switchLang('ko')">한국어</button>
-      <button type="button" class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
-    </div>
-
-    <h2 data-i18n="joinTitle">会員登録</h2>
-    <div id="errorMsg" class="error-msg"></div>
-
-    <!-- 会員登録リクエストフォーム -->
-    <form action="api/join" method="post">
-      <div class="form-group">
-        <label for="userId" data-i18n="userId">ユーザーID</label>
-        <input type="text" id="userId" name="userId" data-i18n-placeholder="idPlaceholder" placeholder="ユーザーIDを入力" required>
-      </div>
-
-      <div class="form-group">
-        <label for="userPw" data-i18n="userPw">パスワード</label>
-        <input type="password" id="userPw" name="userPw" data-i18n-placeholder="pwPlaceholder" placeholder="パスワードを入力" required>
-      </div>
-
-      <div class="form-group">
-        <label for="userName" data-i18n="userName">お名前</label>
-        <input type="text" id="userName" name="userName" data-i18n-placeholder="namePlaceholder" placeholder="お名前を入力" required>
-      </div>
-
-      <button type="submit" class="btn-submit" data-i18n="joinCompleteBtn">登録完了</button>
-    </form>
-
-    <div class="link">
-      <span data-i18n="hasAccount">既にアカウントをお持ちですか？</span> 
-      <a href="login.html" data-i18n="goToLogin">ログインはこちら</a>
-    </div>
+  <!-- 多言語切り替えエリア -->
+  <div class="lang-group">
+    <span style="font-size: 12px; margin-top: 2px;">🌐</span>
+    <button type="button" class="lang-btn" id="btnJa" onclick="switchLang('ja')">日本語</button>
+    <button type="button" class="lang-btn" id="btnKo" onclick="switchLang('ko')">한국어</button>
+    <button type="button" class="lang-btn" id="btnEn" onclick="switchLang('en')">EN</button>
   </div>
 
-  <script src="lang.js"></script>
-  <script>
-    // 言語切り替え
-    function switchLang(lang) {
-      changeLanguage(lang);
-      updateErrorMessage();
+  <h2 data-i18n="joinTitle">会員登録</h2>
+  <div id="errorMsg" class="error-msg"></div>
+
+  <!-- 会員登録リクエストフォーム -->
+  <form action="api/join" method="post" id="joinForm" onsubmit="return validateForm()">
+    <!-- ユーザーID -->
+    <div class="form-group">
+      <label for="userId" data-i18n="userId">ユーザーID</label>
+      <div class="input-wrap">
+        <input type="text" id="userId" name="userId" placeholder="英数字4〜20文字" required minlength="4" maxlength="20">
+      </div>
+    </div>
+
+    <!-- パスワード -->
+    <div class="form-group">
+      <label for="userPw" data-i18n="userPw">パスワード</label>
+      <div class="input-wrap">
+        <input type="password" id="userPw" name="userPw" placeholder="4文字以上" required minlength="4" oninput="checkPwMatch()">
+        <span class="toggle-pw" onclick="toggleVisibility('userPw', this)">👁️</span>
+      </div>
+    </div>
+
+    <!-- パスワード再確認 -->
+    <div class="form-group">
+      <label for="userPwConfirm" id="lblPwConfirm">パスワードの再確認</label>
+      <div class="input-wrap">
+        <input type="password" id="userPwConfirm" placeholder="もう一度入力" required oninput="checkPwMatch()">
+        <span class="toggle-pw" onclick="toggleVisibility('userPwConfirm', this)">👁️</span>
+      </div>
+      <div id="pwMatchMsg" class="feedback-msg"></div>
+    </div>
+
+    <!-- お名前 -->
+    <div class="form-group">
+      <label for="userName" data-i18n="userName">お名前</label>
+      <div class="input-wrap">
+        <input type="text" id="userName" name="userName" placeholder="表示名を入力" required maxlength="30">
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" data-i18n="joinCompleteBtn">登録完了</button>
+  </form>
+
+  <div class="link">
+    <span data-i18n="hasAccount">既にアカウントをお持ちですか？</span>
+    <a href="login.html" data-i18n="goToLogin">ログインはこちら</a>
+  </div>
+</div>
+
+<script src="lang.js"></script>
+<script>
+  // パスワード表示／非表示切り替え
+  function toggleVisibility(inputId, iconEl) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      iconEl.style.color = '#1d3557';
+    } else {
+      input.type = 'password';
+      iconEl.style.color = '#868e96';
+    }
+  }
+
+  // パスワード一致チェック
+  function checkPwMatch() {
+    const pw = document.getElementById('userPw').value;
+    const pwConfirm = document.getElementById('userPwConfirm').value;
+    const msgEl = document.getElementById('pwMatchMsg');
+
+    if (!pwConfirm) {
+      msgEl.className = 'feedback-msg';
+      msgEl.innerText = '';
+      return true;
     }
 
-    // 会員登録エラーメッセージの判定と表示
-    const urlParams = new URLSearchParams(window.location.search);
-    const error = urlParams.get("error");
-    const errorDiv = document.getElementById("errorMsg");
+    const matchTexts = {
+      ja: { ok: "✔ パスワードが一致しました", no: "✖ パスワードが一致しません" },
+      ko: { ok: "✔ 비밀번호가 일치합니다", no: "✖ 비밀번호가 일치하지 않습니다" },
+      en: { ok: "✔ Passwords match", no: "✖ Passwords do not match" }
+    };
+    const cur = matchTexts[currentLang] || matchTexts.ja;
 
-    function updateErrorMessage() {
-      if (!error) return;
-      const messages = {
-        ja: { duplicate: "既に存在するユーザーIDです。", empty: "すべての項目を入力してください。", default: "登録中にエラーが発生しました。" },
-        ko: { duplicate: "이미 존재하는 아이디입니다.", empty: "모든 항목을 입력해 주세요.", default: "가입 처리 오류가 발생했습니다." },
-        en: { duplicate: "This username already exists.", empty: "Please fill in all fields.", default: "An error occurred during registration." }
+    if (pw === pwConfirm) {
+      msgEl.className = 'feedback-msg success';
+      msgEl.innerText = cur.ok;
+      return true;
+    } else {
+      msgEl.className = 'feedback-msg error';
+      msgEl.innerText = cur.no;
+      return false;
+    }
+  }
+
+  // フォーム送信前の最終検証
+  function validateForm() {
+    if (!checkPwMatch()) {
+      const alertMsg = {
+        ja: "パスワードが一致していません。もう一度ご確認ください。",
+        ko: "비밀번호가 서로 일치하지 않습니다. 다시 확인해 주세요.",
+        en: "Passwords do not match. Please verify again."
       };
-      const map = messages[currentLang] || messages.ja;
-      errorDiv.innerText = map[error] || map.default;
-      errorDiv.style.display = "block";
+      alert(alertMsg[currentLang] || alertMsg.ja);
+      document.getElementById('userPwConfirm').focus();
+      return false;
     }
+    return true;
+  }
 
-    document.addEventListener("DOMContentLoaded", updateErrorMessage);
-  </script>
+  // 言語切り替え連動
+  function switchLang(lang) {
+    changeLanguage(lang);
+    updateErrorMessage();
+    updateDynamicLabels();
+    checkPwMatch();
+  }
+
+  // パスワード確認ラベル等の動的更新
+  function updateDynamicLabels() {
+    const labels = {
+      ja: { confirm: "パスワードの再確認", idPlace: "英数字4〜20文字", pwPlace: "4文字以上", pwConfPlace: "もう一度入力", namePlace: "表示名を入力" },
+      ko: { confirm: "비밀번호 재확인", idPlace: "영문/숫자 4~20자", pwPlace: "4자 이상 입력", pwConfPlace: "비밀번호 다시 입력", namePlace: "이름(닉네임) 입력" },
+      en: { confirm: "Confirm Password", idPlace: "4-20 alphanumeric", pwPlace: "4 characters min", pwConfPlace: "Re-enter password", namePlace: "Enter display name" }
+    };
+    const cur = labels[currentLang] || labels.ja;
+    document.getElementById('lblPwConfirm').innerText = cur.confirm;
+    document.getElementById('userId').placeholder = cur.idPlace;
+    document.getElementById('userPw').placeholder = cur.pwPlace;
+    document.getElementById('userPwConfirm').placeholder = cur.pwConfPlace;
+    document.getElementById('userName').placeholder = cur.namePlace;
+  }
+
+  // URLクエリパラメータによるサーバーエラーメッセージ表示
+  const urlParams = new URLSearchParams(window.location.search);
+  const error = urlParams.get("error");
+  const errorDiv = document.getElementById("errorMsg");
+
+  function updateErrorMessage() {
+    if (!error) return;
+    const messages = {
+      ja: { duplicate: "既に存在するユーザーIDです。", empty: "すべての項目を入力してください。", fail: "登録に失敗しました。", default: "登録中にエラーが発生しました。" },
+      ko: { duplicate: "이미 존재하는 아이디입니다.", empty: "모든 항목을 입력해 주세요.", fail: "회원가입에 실패했습니다.", default: "가입 처리 오류가 발생했습니다." },
+      en: { duplicate: "This username already exists.", empty: "Please fill in all fields.", fail: "Registration failed.", default: "An error occurred during registration." }
+    };
+    const map = messages[currentLang] || messages.ja;
+    errorDiv.innerText = map[error] || map.default;
+    errorDiv.style.display = "block";
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    updateErrorMessage();
+    updateDynamicLabels();
+  });
+</script>
 </body>
 </html>

@@ -16,14 +16,19 @@ import common.DBConn;
 public class LoginServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // POST: ログイン認証処理
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
         String userId = request.getParameter("userId");
         String userPw = request.getParameter("userPw");
+
+        if (userId == null || userId.trim().isEmpty() ||
+                userPw == null || userPw.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/login.html?error=1");
+            return;
+        }
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -31,26 +36,37 @@ public class LoginServlet extends HttpServlet {
 
         try {
             conn = DBConn.getConnection();
-            // USERSテーブルよりID・パスワードが一致するレコードを照会
+            if (conn == null) {
+                System.err.println("[LoginServlet] ❌ DB 커넥션을 가져오지 못했습니다.");
+                response.sendRedirect(request.getContextPath() + "/login.html?error=server");
+                return;
+            }
+
             String sql = "SELECT USER_NAME FROM USERS WHERE USER_ID = ? AND USER_PW = ?";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, userId != null ? userId.trim() : "");
-            pstmt.setString(2, userPw != null ? userPw.trim() : "");
+            pstmt.setString(1, userId.trim());
+            pstmt.setString(2, userPw.trim());
             rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                // 認証成功: セッションに対象ユーザー情報を保持
-                HttpSession session = request.getSession();
-                session.setAttribute("loginId", userId.trim());
-                session.setAttribute("loginName", rs.getString("USER_NAME"));
+                String userName = rs.getString("USER_NAME");
 
-                // メイン掲示板画面へリダイレクト
+                HttpSession oldSession = request.getSession(false);
+                if (oldSession != null) oldSession.invalidate();
+
+                HttpSession newSession = request.getSession(true);
+                newSession.setAttribute("loginId", userId.trim());
+                newSession.setAttribute("loginName", userName);
+                newSession.setMaxInactiveInterval(60 * 60);
+
+                System.out.println("[LoginServlet] ✅ 로그인 성공: " + userId.trim() + " (" + userName + ")");
                 response.sendRedirect(request.getContextPath() + "/board.html");
             } else {
-                // 認証失敗: エラーコード付きでログイン画面へ
+                System.out.println("[LoginServlet] ⚠️ 로그인 실패 (일치 계정 없음): " + userId.trim());
                 response.sendRedirect(request.getContextPath() + "/login.html?error=1");
             }
         } catch (Exception e) {
+            System.err.println("[LoginServlet] ❌ 에러 발생: " + e.getMessage());
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/login.html?error=server");
         } finally {

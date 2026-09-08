@@ -22,22 +22,26 @@ import common.DBConn;
 
 @WebServlet("/api/board")
 @MultipartConfig(
-    fileSizeThreshold = 1024 * 1024 * 1, // 1MB
-    maxFileSize = 1024 * 1024 * 10,      // 10MB
-    maxRequestSize = 1024 * 1024 * 20    // 20MB
+        fileSizeThreshold = 1024 * 1024 * 1, // 1MB
+        maxFileSize = 1024 * 1024 * 10,      // 10MB
+        maxRequestSize = 1024 * 1024 * 20    // 20MB
 )
 public class BoardServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     // GET: アニメレビュー一覧取得または単一レビューの詳細取得
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("application/json; charset=UTF-8");
 
         String bnoParam = request.getParameter("bno");
         if (bnoParam != null && !bnoParam.trim().isEmpty()) {
-            getSingleReview(request, response, Integer.parseInt(bnoParam));
+            try {
+                getSingleReview(request, response, Integer.parseInt(bnoParam.trim()));
+            } catch (NumberFormatException e) {
+                response.getWriter().write("{}");
+            }
             return;
         }
 
@@ -49,27 +53,27 @@ public class BoardServlet extends HttpServlet {
         try {
             conn = DBConn.getConnection();
             String sql = "SELECT BNO, ANIME_TITLE, TITLE, CONTENT, RATING, IMAGE_FILE, WRITER, " +
-                         "TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') AS REG_DATE " +
-                         "FROM ANIME_REVIEWS ORDER BY BNO DESC";
+                    "TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') AS REG_DATE " +
+                    "FROM ANIME_REVIEWS ORDER BY BNO DESC";
             pstmt = conn.prepareStatement(sql);
             rs = pstmt.executeQuery();
 
             boolean isFirst = true;
             while (rs.next()) {
                 if (!isFirst) json.append(",");
-                
+
                 String contentStr = readClob(rs.getClob("CONTENT"));
 
                 json.append("{")
-                    .append("\"bno\":").append(rs.getInt("BNO")).append(",")
-                    .append("\"animeTitle\":\"").append(escapeJson(rs.getString("ANIME_TITLE"))).append("\",")
-                    .append("\"title\":\"").append(escapeJson(rs.getString("TITLE"))).append("\",")
-                    .append("\"content\":\"").append(escapeJson(contentStr)).append("\",")
-                    .append("\"rating\":").append(rs.getInt("RATING")).append(",")
-                    .append("\"imageFile\":\"").append(escapeJson(rs.getString("IMAGE_FILE"))).append("\",")
-                    .append("\"writer\":\"").append(escapeJson(rs.getString("WRITER"))).append("\",")
-                    .append("\"regDate\":\"").append(rs.getString("REG_DATE")).append("\"")
-                    .append("}");
+                        .append("\"bno\":").append(rs.getInt("BNO")).append(",")
+                        .append("\"animeTitle\":\"").append(escapeJson(rs.getString("ANIME_TITLE"))).append("\",")
+                        .append("\"title\":\"").append(escapeJson(rs.getString("TITLE"))).append("\",")
+                        .append("\"content\":\"").append(escapeJson(contentStr)).append("\",")
+                        .append("\"rating\":").append(rs.getInt("RATING")).append(",")
+                        .append("\"imageFile\":\"").append(escapeJson(rs.getString("IMAGE_FILE"))).append("\",")
+                        .append("\"writer\":\"").append(escapeJson(rs.getString("WRITER"))).append("\",")
+                        .append("\"regDate\":\"").append(rs.getString("REG_DATE")).append("\"")
+                        .append("}");
                 isFirst = false;
             }
         } catch (Exception e) {
@@ -82,7 +86,7 @@ public class BoardServlet extends HttpServlet {
     }
 
     // 単一レビューのJSON返却
-    private void getSingleReview(HttpServletRequest request, HttpServletResponse response, int bno) 
+    private void getSingleReview(HttpServletRequest request, HttpServletResponse response, int bno)
             throws IOException {
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -91,8 +95,8 @@ public class BoardServlet extends HttpServlet {
         try {
             conn = DBConn.getConnection();
             String sql = "SELECT BNO, ANIME_TITLE, TITLE, CONTENT, RATING, IMAGE_FILE, WRITER, " +
-                         "TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') AS REG_DATE " +
-                         "FROM ANIME_REVIEWS WHERE BNO = ?";
+                    "TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') AS REG_DATE " +
+                    "FROM ANIME_REVIEWS WHERE BNO = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, bno);
             rs = pstmt.executeQuery();
@@ -100,15 +104,15 @@ public class BoardServlet extends HttpServlet {
             if (rs.next()) {
                 String contentStr = readClob(rs.getClob("CONTENT"));
                 String json = String.format(
-                    "{\"bno\":%d,\"animeTitle\":\"%s\",\"title\":\"%s\",\"content\":\"%s\",\"rating\":%d,\"imageFile\":\"%s\",\"writer\":\"%s\",\"regDate\":\"%s\"}",
-                    rs.getInt("BNO"),
-                    escapeJson(rs.getString("ANIME_TITLE")),
-                    escapeJson(rs.getString("TITLE")),
-                    escapeJson(contentStr),
-                    rs.getInt("RATING"),
-                    escapeJson(rs.getString("IMAGE_FILE")),
-                    escapeJson(rs.getString("WRITER")),
-                    rs.getString("REG_DATE")
+                        "{\"bno\":%d,\"animeTitle\":\"%s\",\"title\":\"%s\",\"content\":\"%s\",\"rating\":%d,\"imageFile\":\"%s\",\"writer\":\"%s\",\"regDate\":\"%s\"}",
+                        rs.getInt("BNO"),
+                        escapeJson(rs.getString("ANIME_TITLE")),
+                        escapeJson(rs.getString("TITLE")),
+                        escapeJson(contentStr),
+                        rs.getInt("RATING"),
+                        escapeJson(rs.getString("IMAGE_FILE")),
+                        escapeJson(rs.getString("WRITER")),
+                        rs.getString("REG_DATE")
                 );
                 response.getWriter().write(json);
             } else {
@@ -124,7 +128,7 @@ public class BoardServlet extends HttpServlet {
 
     // POST: アニメレビューの新規登録、修正、削除
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
@@ -138,21 +142,18 @@ public class BoardServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if ("delete".equals(action)) {
-            // レビュー削除処理
             deleteReview(request, response, writer);
             return;
         } else if ("update".equals(action)) {
-            // レビュー修正処理
             updateReview(request, response, writer);
             return;
         }
 
-        // 新規登録処理
         insertReview(request, response, writer);
     }
 
     // レビュー削除処理 (DB削除および物理画像ファイル削除)
-    private void deleteReview(HttpServletRequest request, HttpServletResponse response, String writer) 
+    private void deleteReview(HttpServletRequest request, HttpServletResponse response, String writer)
             throws IOException {
         int bno = 0;
         try {
@@ -169,7 +170,6 @@ public class BoardServlet extends HttpServlet {
 
         try {
             conn = DBConn.getConnection();
-            // 削除対象の画像ファイル名を取得
             String findSql = "SELECT IMAGE_FILE FROM ANIME_REVIEWS WHERE BNO = ? AND WRITER = ?";
             pstmt = conn.prepareStatement(findSql);
             pstmt.setInt(1, bno);
@@ -180,22 +180,14 @@ public class BoardServlet extends HttpServlet {
             }
             pstmt.close();
 
-            // レビューの削除 (本人確認 WRITER = ?)
             String deleteSql = "DELETE FROM ANIME_REVIEWS WHERE BNO = ? AND WRITER = ?";
             pstmt = conn.prepareStatement(deleteSql);
             pstmt.setInt(1, bno);
             pstmt.setString(2, writer);
             int affected = pstmt.executeUpdate();
 
-            // レビュー削除成功時、サーバー上の実画像ファイルも削除して容量を確保
             if (affected > 0 && imageFileToDelete != null && !imageFileToDelete.trim().isEmpty()) {
-                String uploadPath = request.getServletContext().getRealPath("/uploads");
-                if (uploadPath != null) {
-                    File file = new File(uploadPath + File.separator + imageFileToDelete);
-                    if (file.exists()) {
-                        file.delete();
-                    }
-                }
+                deletePhysicalFile(request, imageFileToDelete);
             }
 
             response.sendRedirect(request.getContextPath() + "/board.html");
@@ -208,7 +200,7 @@ public class BoardServlet extends HttpServlet {
     }
 
     // 新規登録処理
-    private void insertReview(HttpServletRequest request, HttpServletResponse response, String writer) 
+    private void insertReview(HttpServletRequest request, HttpServletResponse response, String writer)
             throws IOException {
         String animeTitle = request.getParameter("animeTitle");
         String title = request.getParameter("title");
@@ -223,13 +215,13 @@ public class BoardServlet extends HttpServlet {
         try {
             conn = DBConn.getConnection();
             String sql = "INSERT INTO ANIME_REVIEWS (BNO, ANIME_TITLE, TITLE, CONTENT, RATING, IMAGE_FILE, WRITER, REG_DATE) " +
-                         "VALUES (SEQ_REVIEW_BNO.NEXTVAL, ?, ?, ?, ?, ?, ?, SYSDATE)";
+                    "VALUES (SEQ_REVIEW_BNO.NEXTVAL, ?, ?, ?, ?, ?, ?, SYSDATE)";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, animeTitle != null ? animeTitle.trim() : "Untitled");
-            pstmt.setString(2, title != null ? title.trim() : "No Title");
+            pstmt.setString(1, (animeTitle != null && !animeTitle.trim().isEmpty()) ? animeTitle.trim() : "Untitled");
+            pstmt.setString(2, (title != null && !title.trim().isEmpty()) ? title.trim() : "No Title");
             pstmt.setString(3, content != null ? content : "");
             pstmt.setInt(4, rating);
-            pstmt.setString(5, savedFileName);
+            pstmt.setString(5, savedFileName != null ? savedFileName : "");
             pstmt.setString(6, writer);
             pstmt.executeUpdate();
 
@@ -243,7 +235,7 @@ public class BoardServlet extends HttpServlet {
     }
 
     // レビュー修正処理
-    private void updateReview(HttpServletRequest request, HttpServletResponse response, String writer) 
+    private void updateReview(HttpServletRequest request, HttpServletResponse response, String writer)
             throws IOException {
         int bno = 0;
         try {
@@ -260,7 +252,12 @@ public class BoardServlet extends HttpServlet {
         String existingImage = request.getParameter("existingImage");
 
         String newUploadedFile = saveUploadedFile(request);
-        String finalImage = (newUploadedFile != null) ? newUploadedFile : existingImage;
+        String finalImage = (newUploadedFile != null) ? newUploadedFile : (existingImage != null ? existingImage : "");
+
+        // 新しい画像が登録された場合、以前の古い画像ファイルがあれば物理削除
+        if (newUploadedFile != null && existingImage != null && !existingImage.trim().isEmpty()) {
+            deletePhysicalFile(request, existingImage);
+        }
 
         Connection conn = null;
         PreparedStatement pstmt = null;
@@ -268,11 +265,11 @@ public class BoardServlet extends HttpServlet {
         try {
             conn = DBConn.getConnection();
             String sql = "UPDATE ANIME_REVIEWS " +
-                         "SET ANIME_TITLE = ?, TITLE = ?, CONTENT = ?, RATING = ?, IMAGE_FILE = ? " +
-                         "WHERE BNO = ? AND WRITER = ?";
+                    "SET ANIME_TITLE = ?, TITLE = ?, CONTENT = ?, RATING = ?, IMAGE_FILE = ? " +
+                    "WHERE BNO = ? AND WRITER = ?";
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, animeTitle != null ? animeTitle.trim() : "Untitled");
-            pstmt.setString(2, title != null ? title.trim() : "No Title");
+            pstmt.setString(1, (animeTitle != null && !animeTitle.trim().isEmpty()) ? animeTitle.trim() : "Untitled");
+            pstmt.setString(2, (title != null && !title.trim().isEmpty()) ? title.trim() : "No Title");
             pstmt.setString(3, content != null ? content : "");
             pstmt.setInt(4, rating);
             pstmt.setString(5, finalImage);
@@ -289,32 +286,82 @@ public class BoardServlet extends HttpServlet {
         }
     }
 
-    // ファイルアップロード保存共通ヘルパー
+    // ファイルアップロード保存共通ヘルパー (Tomcat 7 / Servlet 3.0 호환)
     private String saveUploadedFile(HttpServletRequest request) {
         try {
             Part filePart = request.getPart("animeImage");
             if (filePart != null && filePart.getSize() > 0) {
-                String submittedName = filePart.getSubmittedFileName();
+                // Servlet 3.0 호환 파일명 추출
+                String submittedName = extractFileName(filePart);
                 if (submittedName != null && !submittedName.trim().isEmpty()) {
                     String fileNameOnly = Paths.get(submittedName).getFileName().toString();
                     String ext = "";
                     int dotIdx = fileNameOnly.lastIndexOf(".");
-                    if (dotIdx >= 0) ext = fileNameOnly.substring(dotIdx);
+                    if (dotIdx >= 0) {
+                        ext = fileNameOnly.substring(dotIdx).toLowerCase();
+                    }
                     String savedFileName = UUID.randomUUID().toString() + ext;
 
-                    String uploadPath = request.getServletContext().getRealPath("/uploads");
-                    if (uploadPath == null) uploadPath = System.getProperty("java.io.tmpdir");
-                    File uploadDir = new File(uploadPath);
-                    if (!uploadDir.exists()) uploadDir.mkdirs();
+                    File uploadDir = getUploadDirectory(request);
+                    File targetFile = new File(uploadDir, savedFileName);
+                    filePart.write(targetFile.getAbsolutePath());
 
-                    filePart.write(uploadPath + File.separator + savedFileName);
+                    System.out.println("[AniLog] ファイル保存成功: " + targetFile.getAbsolutePath());
                     return savedFileName;
                 }
             }
         } catch (Exception e) {
             System.err.println("[AniLog] 画像保存警告: " + e.getMessage());
+            e.printStackTrace();
         }
         return null;
+    }
+
+    // Servlet 3.0 호환 Multipart Header 파싱 메서드 (Tomcat 7 NoSuchMethodError 방지)
+    private String extractFileName(Part part) {
+        String contentDisp = part.getHeader("content-disposition");
+        if (contentDisp == null) return null;
+
+        for (String token : contentDisp.split(";")) {
+            if (token.trim().startsWith("filename")) {
+                String fileName = token.substring(token.indexOf('=') + 1).trim().replace("\"", "");
+                return fileName.substring(fileName.lastIndexOf('/') + 1).substring(fileName.lastIndexOf('\\') + 1);
+            }
+        }
+        return null;
+    }
+
+    // 物理ファイル削除ヘルパー
+    private void deletePhysicalFile(HttpServletRequest request, String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) return;
+        try {
+            File uploadDir = getUploadDirectory(request);
+            File file = new File(uploadDir, fileName);
+            if (file.exists()) {
+                file.delete();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // アップロードディレクトリの決定
+    private File getUploadDirectory(HttpServletRequest request) {
+        String realPath = request.getServletContext().getRealPath("/uploads");
+        File dir = null;
+
+        String appRoot = System.getProperty("user.dir");
+        File devDir = new File(appRoot, "src" + File.separator + "main" + File.separator + "webapp" + File.separator + "uploads");
+        if (devDir.exists() || devDir.getParentFile().exists()) {
+            dir = devDir;
+        } else if (realPath != null) {
+            dir = new File(realPath);
+        } else {
+            dir = new File(System.getProperty("java.io.tmpdir"), "jpanime_uploads");
+        }
+
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        return dir;
     }
 
     private int parseRating(String ratingStr) {
@@ -341,8 +388,8 @@ public class BoardServlet extends HttpServlet {
     private String escapeJson(String val) {
         if (val == null) return "";
         return val.replace("\\", "\\\\")
-                  .replace("\"", "\\\"")
-                  .replace("\r", "")
-                  .replace("\n", "\\n");
+                .replace("\"", "\\\"")
+                .replace("\r", "")
+                .replace("\n", "\\n");
     }
 }

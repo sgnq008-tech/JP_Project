@@ -14,27 +14,39 @@ public class AuthServlet extends HttpServlet {
 
     // GET: ログイン中のユーザーセッション情報（IDおよび表示名）をJSON形式で返却
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. レスポンス設定およびキャッシュ無効化（ログアウト後の状態不整合防止）
         response.setContentType("application/json; charset=UTF-8");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1
+        response.setHeader("Pragma", "no-cache");                                  // HTTP 1.0
+        response.setDateHeader("Expires", 0);                                       // Proxies
+
         HttpSession session = request.getSession(false);
 
         if (session != null && session.getAttribute("loginId") != null) {
             String loginId = (String) session.getAttribute("loginId");
             String loginName = (String) session.getAttribute("loginName");
-            if (loginName == null) loginName = loginId;
-            
-            // JSONフォーマットでクライアントへ返却
-            response.getWriter().write(String.format("{\"loginId\":\"%s\",\"loginName\":\"%s\"}", loginId, loginName));
+            if (loginName == null || loginName.trim().isEmpty()) {
+                loginName = loginId;
+            }
+
+            // JSON安全エスケープ処理を施してクライアントへ返却
+            String json = String.format(
+                    "{\"loginId\":\"%s\",\"loginName\":\"%s\"}",
+                    escapeJson(loginId),
+                    escapeJson(loginName)
+            );
+            response.getWriter().write(json);
         } else {
-            // 未ログイン状態
+            // 未ログイン状態の返却
             response.getWriter().write("{}");
         }
     }
 
     // POST: ログアウト処理（既存セッションの破棄）
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -42,5 +54,14 @@ public class AuthServlet extends HttpServlet {
         }
         // ログイン画面へリダイレクト
         response.sendRedirect(request.getContextPath() + "/login.html");
+    }
+
+    // JSON文字列エスケープヘルパー
+    private String escapeJson(String val) {
+        if (val == null) return "";
+        return val.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "")
+                .replace("\n", "\\n");
     }
 }
