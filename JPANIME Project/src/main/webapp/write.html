@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="writeTitle">AniLog - HERO REVIEW POST</title>
+
+  <!-- Google Fonts: アメコミ風英字フォント(Bangers) および 日韓フォントの読み込み -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===================================================
+       ヒロアカ(僕のヒーローアカデミア) テーマカラー変数定義
+       =================================================== */
+    :root {
+      --mha-green: #0b6623;         /* デクのコスチューム基本グリーン */
+      --mha-teal: #0fa37f;          /* アクセントティールグリーン */
+      --mha-bright-green: #00ff87;  /* ワン・フォー・オール発光色 */
+      --mha-yellow: #ffde00;        /* タイトル・ボタン強調イエロー */
+      --mha-orange: #ff5722;        /* 爆豪風アクセントオレンジ */
+      --mha-dark: #121820;          /* 境界線・シャドウ用ダーク */
+      --mha-panel-bg: #1c2430;      /* パネル背景ダークスレート */
+      --comic-border: 3px solid #121820; /* アメコミ調の太枠境界線 */
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* 背景: アメコミ印刷風のハーフトーン・ドットパターン背景 */
+    body {
+      font-family: 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+      background-color: #0d1117;
+      color: #ffffff;
+      background-image:
+              radial-gradient(var(--mha-panel-bg) 15%, transparent 16%),
+              radial-gradient(var(--mha-dark) 15%, transparent 16%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* レビュー作成メインコンテナ (カードパネル) */
+    .write-container {
+      background-color: var(--mha-panel-bg);
+      width: 100%;
+      max-width: 720px;
+      padding: 35px 30px;
+      border: 4px solid var(--mha-teal);
+      border-radius: 16px;
+      box-shadow: 12px 12px 0 #0b6623, 12px 12px 0 3px #121820;
+      position: relative;
+    }
+
+    /* パネル上部の斜めヒーローバッジラベル */
+    .hero-badge {
+      position: absolute;
+      top: -18px;
+      left: 30px;
+      transform: rotate(-2deg);
+      background: var(--mha-yellow);
+      color: #121820;
+      font-family: 'Bangers', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+      padding: 0.3rem 1.2rem;
+      border: 3px solid #121820;
+      box-shadow: 4px 4px 0 var(--mha-orange);
+      white-space: nowrap;
+    }
+
+    /* ヘッダーバー: タイトルと多言語切替ボタンの配置 */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 25px;
+      border-bottom: 3px solid var(--mha-yellow);
+      padding-bottom: 15px;
+    }
+
+    .header-bar h2 {
+      margin: 0;
+      font-family: 'Bangers', sans-serif;
+      font-size: 2.2rem;
+      color: #ffffff;
+      text-shadow: 2px 2px 0 var(--mha-orange), 4px 4px 0 #121820;
+      letter-spacing: 1.5px;
+    }
+
+    /* 言語切替ボタン群: 各ボタンのサイズ固定と文字折り返し防止 */
+    .lang-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .lang-btn {
+      min-width: 52px;              /* 全ボタンの基本横幅を統一 */
+      height: 32px;                 /* 高さを固定してレイアウト崩れを防止 */
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 2px solid #334155;
+      background-color: #0f172a;
+      color: #94a3b8;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;          /* 文字列の自動改行を無効化 */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .lang-btn.active, .lang-btn:hover {
+      background-color: var(--mha-yellow);
+      color: #121820;
+      border-color: #121820;
+    }
+
+    /* 入力フォーム共通グループ */
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: var(--mha-bright-green);
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"], select, textarea, input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      background: #0d1117;
+      border: 2px solid #334155;
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: var(--mha-bright-green);
+    }
+
+    textarea { resize: vertical; min-height: 140px; line-height: 1.6; }
+
+    /* ===================================================
+       AIインテリジェンス分析パネル (発目明のサポートアイテム風ラボデザイン)
+       =================================================== */
+    .ai-panel {
+      background: #16202c;
+      border: 2px solid var(--mha-teal);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+    }
+    .ai-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .ai-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--mha-bright-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ai-btn {
+      background: linear-gradient(45deg, var(--mha-yellow), var(--mha-orange));
+      color: #121820;
+      border: 2px solid #121820;
+      padding: 5px 12px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 0 var(--mha-bright-green);
+      transition: 0.15s;
+    }
+    .ai-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 #ffffff;
+    }
+    .ai-result {
+      font-size: 13px;
+      color: #e2e8f0;
+      display: none;
+      line-height: 1.6;
+      border-top: 1px dashed #334155;
+      padding-top: 10px;
+      margin-top: 8px;
+    }
+    .ai-tag-badge {
+      display: inline-block;
+      background-color: rgba(15, 163, 127, 0.25);
+      color: var(--mha-bright-green);
+      border: 1px solid var(--mha-teal);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-right: 5px;
+      margin-top: 5px;
+    }
+
+    /* アップロード画像プレビュー表示枠 */
+    .preview-box {
+      margin-top: 10px;
+      display: none;
+      text-align: center;
+      background-color: #0d1117;
+      padding: 10px;
+      border-radius: 6px;
+      border: 2px dashed #334155;
+    }
+    .preview-box img { max-width: 100%; max-height: 220px; border-radius: 4px; }
+
+    /* 下部ボタングループ */
+    .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 25px;
+    }
+    .btn {
+      padding: 10px 22px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 2px solid #121820;
+      cursor: pointer;
+      font-weight: bold;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-in-out;
+    }
+    /* 登録ボタン: ヒロアカ調グラデーション＆発光シャドウ */
+    .btn-save {
+      font-family: 'Bangers', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 1px;
+      background: linear-gradient(45deg, var(--mha-yellow), var(--mha-orange));
+      color: #121820;
+      box-shadow: 4px 4px 0 var(--mha-bright-green);
+    }
+    .btn-save:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 #ffffff;
+    }
+    .btn-back {
+      background-color: #334155;
+      color: #ffffff;
+      box-shadow: 4px 4px 0 #0f172a;
+    }
+    .btn-back:hover {
+      background-color: #475569;
+      transform: translate(-1px, -1px);
+    }
+  </style>
+</head>
+<body>
+
+<div class="write-container">
+  <!-- 装飾バッジ -->
+  <div class="hero-badge">HERO MISSION : REVIEW ARCHIVE</div>
+
+  <!-- ヘッダーエリア (タイトル & 言語切替) -->
+  <div class="header-bar">
+    <h2 data-i18n="writeTitle">HERO REVIEW POST</h2>
+    <div class="lang-group">
+      <span style="font-size: 14px;">🌐</span>
+      <button type="button" class="lang-btn" id="btnJa" onclick="changeLanguage('ja')">日本語</button>
+      <button type="button" class="lang-btn active" id="btnKo" onclick="changeLanguage('ko')">한국어</button>
+      <button type="button" class="lang-btn" id="btnEn" onclick="changeLanguage('en')">EN</button>
+    </div>
+  </div>
+
+  <!-- レビュー投稿フォーム: multipart/form-dataにより画像アップロードとテキストを同時送信 -->
+  <form action="api/board" method="post" enctype="multipart/form-data">
+    <!-- 1. アニメ作品名入力欄 -->
+    <div class="form-group">
+      <label for="animeTitle" data-i18n="animeTitleLabel">애니메이션 작품명</label>
+      <input type="text" id="animeTitle" name="animeTitle" placeholder="예: 나의 히어로 아카데미아, 주술회전" required>
+    </div>
+
+    <!-- 2. レビュータイトル入力欄 -->
+    <div class="form-group">
+      <label for="title" data-i18n="postTitleLabel">리뷰 제목</label>
+      <input type="text" id="title" name="title" placeholder="리뷰 요약 또는 개성 넘치는 제목을 입력하세요" required>
+    </div>
+
+    <!-- 3. レビュー本文テキストエリア -->
+    <div class="form-group">
+      <label for="content" data-i18n="postContentLabel">감상평 및 본문 내용</label>
+      <textarea id="content" name="content" placeholder="애니메이션에 대한 솔직하고 열정적인 감상을 남겨주세요 (PLUS ULTRA!)" required></textarea>
+    </div>
+
+    <!-- 4. AI感情分析＆おすすめ星点数サポーターパネル -->
+    <div class="ai-panel">
+      <div class="ai-header">
+        <span class="ai-title">🤖 AniLog AI 감정 분석 & 별점 서포터</span>
+        <button type="button" class="ai-btn" onclick="runAiIntelligence()">AI 자동 분석</button>
+      </div>
+      <!-- AI分析結果レンダリング領域 (初期状態は非表示) -->
+      <div id="aiResult" class="ai-result">
+        <div><b>감정 판정:</b> <span id="aiSentiment" style="font-weight: bold; color: var(--mha-bright-green);">-</span> (<span id="aiScore" style="color: var(--mha-yellow);">0%</span>)</div>
+        <div style="margin-top: 4px;"><b>AI 핵심 요약:</b> <span id="aiSummary" style="color: #cbd5e1;">-</span></div>
+        <div id="aiTagsContainer" style="margin-top: 6px;"></div>
+      </div>
+    </div>
+
+    <!-- 5. 評価(星点数)セレクトボックス -->
+    <div class="form-group">
+      <label for="rating" data-i18n="ratingLabel">히어로 평가 (별점)</label>
+      <select id="rating" name="rating">
+        <option value="5" data-i18n-opt="rating5">★★★★★ (5점 - 최고의 명작 / PLUS ULTRA)</option>
+        <option value="4" data-i18n-opt="rating4">★★★★☆ (4점 - 훌륭한 작화와 연출)</option>
+        <option value="3" data-i18n-opt="rating3">★★★☆☆ (3점 - 무난한 킬링타임)</option>
+        <option value="2" data-i18n-opt="rating2">★★☆☆☆ (2점 - 다소 아쉬운 전개)</option>
+        <option value="1" data-i18n-opt="rating1">★☆☆☆☆ (1점 - 불만족)</option>
+      </select>
+    </div>
+
+    <!-- 6. サムネイル画像アップロード & プレビュー表示枠 -->
+    <div class="form-group">
+      <label for="animeImage" data-i18n="imageLabel">작품 포스터 / 스크린샷 첨부</label>
+      <input type="file" id="animeImage" name="animeImage" accept="image/*" onchange="previewImage(event)">
+      <div class="preview-box" id="previewBox">
+        <img id="imgPreview" src="" alt="Preview">
+      </div>
+    </div>
+
+    <!-- 7. アクションボタン: 一覧へ戻る & 送信 -->
+    <div class="btn-row">
+      <a href="board.html" class="btn btn-back" data-i18n="backToList">목록으로 돌아가기</a>
+      <button type="submit" class="btn btn-save" data-i18n="saveBtn">SMASH! 리뷰 등록</button>
+    </div>
+  </form>
+</div>
+
+<!-- 多言語辞書スクリプトの読み込み -->
+<script src="lang.js"></script>
+<script>
+  /**
+   * AIテキスト分析実行関数
+   * 【機能】入力されたタイトル・本文を抽出し、サーブレット(/api/intelligence)へ非同期送信。
+   *        感情判定スコア・要約・推奨評価(星点数)・キーワードタグを受け取り画面に自動反映します。
+   */
+  function runAiIntelligence() {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+
+    // 未入力検証: 分析対象の文字列が空の場合は警告を表示して中断
+    if (!title && !content) {
+      alert("분석할 제목 또는 본문 내용을 먼저 입력해 주세요.");
+      return;
+    }
+
+    // POSTパラメータの組み立て (application/x-www-form-urlencoded)
+    const params = new URLSearchParams();
+    params.append('title', title);
+    params.append('content', content);
+
+    // AI分析APIエンドポイントへの通信
+    fetch('api/intelligence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+      body: params.toString()
+    })
+            .then(res => res.json())
+            .then(data => {
+              // 分析結果パネルの可視化
+              document.getElementById('aiResult').style.display = 'block';
+
+              // 感情判定ラベルと信頼度スコアの設定
+              document.getElementById('aiSentiment').innerText = data.sentimentLabel;
+              document.getElementById('aiScore').innerText = "신뢰도 " + data.sentimentScore;
+
+              // AI作成の要約文の反映
+              document.getElementById('aiSummary').innerText = data.aiSummary;
+
+              // AI推奨の星評価が存在する場合、セレクトボックスの値を自動選択
+              if (data.recommendedRating) {
+                document.getElementById('rating').value = data.recommendedRating;
+              }
+
+              // 抽出されたキーワードタグのバッジ生成
+              const tagsBox = document.getElementById('aiTagsContainer');
+              tagsBox.innerHTML = '<b>추출 태그:</b> ';
+              data.tags.forEach(tag => {
+                const badge = document.createElement('span');
+                badge.className = 'ai-tag-badge';
+                badge.innerText = tag;
+                tagsBox.appendChild(badge);
+              });
+            })
+            .catch(err => {
+              console.error("AI Intelligence Error:", err);
+            });
+  }
+
+  /**
+   * アップロード画像ローカルプレビュー関数
+   * 【機能】FileReader APIを用いて、選択した画像ファイルをサーバー送信前にブラウザ上で即座にプレビュー表示します。
+   */
+  function previewImage(event) {
+    const input = event.target;
+    const previewBox = document.getElementById('previewBox');
+    const imgPreview = document.getElementById('imgPreview');
+
+    // ファイルが正常に選択されているかの検証
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+
+      // ファイルの読み込み完了ハンドラー
+      reader.onload = function(e) {
+        imgPreview.src = e.target.result;       // Data URL形式の画像データをimgタグのsrcへセット
+        previewBox.style.display = 'block';      // プレビュー枠を表示
+      };
+
+      // Base64エンコードのData URLとして非同期読み込み開始
+      reader.readAsDataURL(input.files[0]);
+    } else {
+      // ファイル選択が解除された場合はプレビューを非表示
+      previewBox.style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>

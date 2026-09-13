@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniLog - HERO REGISTRATION</title>
+
+  <!-- Google Fonts: アメコミ調英字フォント(Bangers) および 日韓フォントの読み込み -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===================================================
+       ヒロアカ(僕のヒーローアカデミア) テーマカラー変数定義
+       =================================================== */
+    :root {
+      --mha-green: #0b6623;         /* デクのコスチューム基本グリーン */
+      --mha-teal: #0fa37f;          /* アクセントティールグリーン */
+      --mha-bright-green: #00ff87;  /* 発光グリーン(ラベル・フォーカス用) */
+      --mha-yellow: #ffde00;        /* タイトル・ボタン強調イエロー */
+      --mha-orange: #ff5722;        /* 爆豪風アクセントオレンジ */
+      --mha-dark: #121820;          /* 境界線・シャドウ用ダーク */
+      --mha-panel-bg: #1c2430;      /* カードパネル背景ダークスレート */
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* 背景: アメコミ印刷風のハーフトーン・ドットパターン背景 */
+    body {
+      font-family: 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+      background-color: #0d1117;
+      color: #ffffff;
+      background-image:
+              radial-gradient(var(--mha-panel-bg) 15%, transparent 16%),
+              radial-gradient(var(--mha-dark) 15%, transparent 16%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* 新規会員登録カードコンテナ */
+    .join-card {
+      background-color: var(--mha-panel-bg);
+      border: 4px solid var(--mha-teal);
+      border-radius: 16px;
+      box-shadow: 12px 12px 0 #0b6623, 12px 12px 0 3px #121820;
+      width: 100%;
+      max-width: 440px;
+      padding: 2.2rem;
+      position: relative;
+    }
+
+    /* カード上部の斜めヒーローバッジラベル */
+    .hero-badge {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      background: var(--mha-yellow);
+      color: #121820;
+      font-family: 'Bangers', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      padding: 0.3rem 1.2rem;
+      border: 3px solid #121820;
+      box-shadow: 4px 4px 0 var(--mha-orange);
+      white-space: nowrap;
+    }
+
+    /* 言語切替ボタン群: ボタンサイズ固定とテキスト折り返し防止 */
+    .lang-switch {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 0.8rem;
+      margin-bottom: 1.2rem;
+      align-items: center;
+    }
+
+    .lang-btn {
+      min-width: 52px;              /* 全ボタンの基本横幅を統一 */
+      height: 32px;                 /* 高さを固定してレイアウト崩れを防止 */
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: bold;
+      border: 2px solid #334155;
+      background-color: #0f172a;
+      color: #94a3b8;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;          /* 文字列の自動改行を無効化 */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .lang-btn.active, .lang-btn:hover {
+      background-color: var(--mha-yellow);
+      color: #121820;
+      border-color: #121820;
+    }
+
+    /* フォームタイトル (アメコミ調シャドウ付き) */
+    .form-title {
+      font-family: 'Bangers', sans-serif;
+      font-size: 2.3rem;
+      text-align: center;
+      color: #ffffff;
+      text-shadow: 3px 3px 0 var(--mha-orange), 5px 5px 0 #121820;
+      letter-spacing: 1px;
+      margin-bottom: 1.2rem;
+    }
+
+    /* 入力グループ */
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    /* 入力項目ラベル */
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--mha-bright-green);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* 入力フィールド */
+    .form-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: #0d1117;
+      border: 2px solid #334155;
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--mha-bright-green);
+    }
+
+    /* 登録実行ボタン: ヒロアカ調グラデーション＆発光シャドウ */
+    .btn-submit {
+      width: 100%;
+      margin-top: 0.8rem;
+      padding: 0.85rem;
+      font-family: 'Bangers', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 1.5px;
+      background: linear-gradient(45deg, var(--mha-yellow), var(--mha-orange));
+      border: 3px solid #121820;
+      color: #121820;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--mha-bright-green);
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-submit:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 #ffffff;
+    }
+
+    /* ログイン画面(login.html)への遷移リンクエリア */
+    .bottom-link {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .bottom-link a {
+      color: var(--mha-yellow);
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+<div class="join-card">
+  <!-- 装飾バッジ -->
+  <div class="hero-badge">BECOME A HERO!</div>
+
+  <!-- 多言語切り替えボタン -->
+  <div class="lang-switch">
+    <button class="lang-btn active" id="btnKo" onclick="changeLang('ko')">한국어</button>
+    <button class="lang-btn" id="btnJa" onclick="changeLang('ja')">日本語</button>
+    <button class="lang-btn" id="btnEn" onclick="changeLang('en')">English</button>
+  </div>
+
+  <h2 class="form-title" id="t-title">HERO REGISTER</h2>
+
+  <!-- 会員登録送信フォーム (相対パス api/join へPOST送信) -->
+  <form action="api/join" method="POST">
+    <!-- 1. 希望ユーザーID入力欄 -->
+    <div class="form-group">
+      <label class="form-label" id="t-idLabel">희망 히어로 아이디 (ID)</label>
+      <input type="text" name="userId" id="userId" class="form-input" placeholder="영문/숫자 4~20자" required>
+    </div>
+
+    <!-- 2. パスワード入力欄 -->
+    <div class="form-group">
+      <label class="form-label" id="t-pwLabel">비밀번호 (PASSWORD)</label>
+      <input type="password" name="userPw" id="userPw" class="form-input" placeholder="비밀번호 입력 (4자 이상)" required>
+    </div>
+
+    <!-- 3. ヒーローネーム(表示ニックネーム)入力欄 -->
+    <div class="form-group">
+      <label class="form-label" id="t-nameLabel">히어로 네임 (닉네임)</label>
+      <input type="text" name="userName" id="userName" class="form-input" placeholder="활동 닉네임 입력" required>
+    </div>
+
+    <!-- 4. 送信ボタン -->
+    <button type="submit" class="btn-submit" id="t-submitBtn">PLUS ULTRA! 가입하기</button>
+  </form>
+
+  <!-- ログイン画面への誘導リンク -->
+  <div class="bottom-link">
+    <span id="t-loginNotice">이미 계정이 있으신가요?</span>
+    <a href="login.html" id="t-loginLink">로그인 화면으로</a>
+  </div>
+</div>
+
+<script>
+  /**
+   * 多言語辞書オブジェクト (韓国語 / 日本語 / 英語)
+   * 【機能】ラベル、プレースホルダー、リンクテキストを各言語へ動的に置換します。
+   */
+  const i18n = {
+    ko: {
+      title: "HERO REGISTER",
+      idLabel: "희망 히어로 아이디 (ID)",
+      pwLabel: "비밀번호 (PASSWORD)",
+      nameLabel: "히어로 네임 (닉네임)",
+      idPlaceholder: "영문/숫자 4~20자",
+      pwPlaceholder: "비밀번호 입력 (4자 이상)",
+      namePlaceholder: "활동 닉네임 입력",
+      submitBtn: "PLUS ULTRA! 가입하기",
+      loginNotice: "이미 계정이 있으신가요?",
+      loginLink: "로그인 화면으로"
+    },
+    ja: {
+      title: "HERO 新規登録",
+      idLabel: "希望ヒーローID (ユーザーID)",
+      pwLabel: "パスワード (PASSWORD)",
+      nameLabel: "ヒーローネーム (ニックネーム)",
+      idPlaceholder: "英数字4~20文字",
+      pwPlaceholder: "パスワード入力 (4文字以上)",
+      namePlaceholder: "活動ニックネーム入力",
+      submitBtn: "PLUS ULTRA! 登録する",
+      loginNotice: "すでにアカウントをお持ちですか？",
+      loginLink: "ログイン画面へ"
+    },
+    en: {
+      title: "HERO REGISTER",
+      idLabel: "Desired Hero ID",
+      pwLabel: "Password",
+      nameLabel: "Hero Name (Nickname)",
+      idPlaceholder: "4-20 alphanumeric characters",
+      pwPlaceholder: "Enter password (min 4 chars)",
+      namePlaceholder: "Enter Hero Nickname",
+      submitBtn: "PLUS ULTRA! JOIN NOW",
+      loginNotice: "Already have an account?",
+      loginLink: "Go to Login"
+    }
+  };
+
+  let currentLang = 'ko'; // デフォルト言語
+
+  /**
+   * 言語切り替え処理
+   * @param {string} lang - 選択された言語コード ('ko', 'ja', 'en')
+   */
+  function changeLang(lang) {
+    currentLang = lang;
+
+    // ボタンのアクティブスタイル更新
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    if (lang === 'ko') document.getElementById('btnKo').classList.add('active');
+    if (lang === 'ja') document.getElementById('btnJa').classList.add('active');
+    if (lang === 'en') document.getElementById('btnEn').classList.add('active');
+
+    // UIテキストおよびプレースホルダーの更新
+    const t = i18n[lang];
+    document.getElementById('t-title').innerText = t.title;
+    document.getElementById('t-idLabel').innerText = t.idLabel;
+    document.getElementById('t-pwLabel').innerText = t.pwLabel;
+    document.getElementById('t-nameLabel').innerText = t.nameLabel;
+    document.getElementById('userId').placeholder = t.idPlaceholder;
+    document.getElementById('userPw').placeholder = t.pwPlaceholder;
+    document.getElementById('userName').placeholder = t.namePlaceholder;
+    document.getElementById('t-submitBtn').innerText = t.submitBtn;
+    document.getElementById('t-loginNotice').innerText = t.loginNotice;
+    document.getElementById('t-loginLink').innerText = t.loginLink;
+  }
+</script>
+</body>
+</html>

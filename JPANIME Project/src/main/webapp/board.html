@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniLog - PLUS ULTRA Anime Reviews</title>
+
+    <!-- Google Fonts: アメコミ風英字フォント(Bangers) および 日韓フォントの読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===================================================
+           ヒロアカ(僕のヒーローアカデミア) テーマカラー変数定義
+           =================================================== */
+        :root {
+            --mha-green: #0b6623;         /* デクのコスチューム基本グリーン */
+            --mha-teal: #0fa37f;          /* アクセントティールグリーン */
+            --mha-bright-green: #00ff87;  /* 発光グリーン(アクセント・ホバー用) */
+            --mha-yellow: #ffde00;        /* タイトル・ボタン強調イエロー */
+            --mha-orange: #ff5722;        /* 爆豪風アクセントオレンジ */
+            --mha-dark: #121820;          /* 境界線・シャドウ用ダーク */
+            --mha-panel-bg: #1c2430;      /* カードパネル背景ダークスレート */
+            --comic-border: 3px solid #121820; /* アメコミ調の太枠境界線 */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* 背景: アメコミ印刷風のハーフトーン・ドットパターン背景 */
+        body {
+            font-family: 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+            background-color: #0d1117;
+            color: #ffffff;
+            background-image:
+                    radial-gradient(var(--mha-panel-bg) 15%, transparent 16%),
+                    radial-gradient(var(--mha-dark) 15%, transparent 16%);
+            background-size: 28px 28px;
+            background-position: 0 0, 14px 14px;
+            min-height: 100vh;
+        }
+
+        /* 最上部ナビゲーションバー: 言語切替および認証ボタングループの配置 */
+        .top-nav {
+            background-color: #0b1118;
+            border-bottom: 2px solid #233142;
+            padding: 0.6rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 言語切替ボタン群 */
+        .lang-switch {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .lang-btn {
+            min-width: 52px;              /* 各ボタンの幅を均一に固定 */
+            height: 32px;                 /* 高さを固定してレイアウトの崩れを防止 */
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 2px solid #334155;
+            background-color: #0f172a;
+            color: #94a3b8;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;          /* 文字列の自動改行を防止 */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .lang-btn.active, .lang-btn:hover {
+            background: var(--mha-yellow);
+            color: #121820;
+            border-color: #121820;
+        }
+
+        /* 認証ナビゲーションリンク・ボタン */
+        .auth-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: #e2e8f0;
+            border: 2px solid var(--mha-teal);
+            padding: 0.35rem 1rem;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--mha-teal);
+            color: #ffffff;
+        }
+
+        /* ログアウトボタン (赤色スタイル) */
+        .logout-btn {
+            background: #ef4444;
+            color: #ffffff;
+            border: 2px solid #121820;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* ヒーローメインヘッダー (斜めクリップパスペインティング) */
+        header {
+            background: linear-gradient(135deg, #062b1b 0%, var(--mha-green) 50%, var(--mha-teal) 100%);
+            border-bottom: 5px solid var(--mha-yellow);
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%);
+        }
+
+        /* ヘッダー上部の回転タグラベル */
+        .header-tag {
+            font-family: 'Bangers', cursive;
+            background: var(--mha-yellow);
+            color: #121820;
+            display: inline-block;
+            padding: 0.3rem 1.2rem;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            transform: rotate(-3deg);
+            border: 3px solid #121820;
+            box-shadow: 4px 4px 0 #ff5722;
+            margin-bottom: 0.6rem;
+        }
+
+        /* サイトメインタイトル (アメコミ調シャドウ付き) */
+        .main-title {
+            font-family: 'Bangers', sans-serif;
+            font-size: 3.5rem;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 4px 4px 0 var(--mha-orange), 7px 7px 0 #121820;
+            margin-bottom: 0.4rem;
+        }
+
+        .sub-slogan {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--mha-bright-green);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* コンテンツコンテナ */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        /* アクションバー: 件数カウントと新規投稿ボタン */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .badge-count {
+            background: #1e293b;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: 2px solid var(--mha-teal);
+            font-weight: bold;
+        }
+
+        /* PLUS ULTRA 新規投稿ボタン (平行四辺形スキューデザイン) */
+        .btn-plus-ultra {
+            font-family: 'Bangers', sans-serif;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            background: linear-gradient(45deg, var(--mha-yellow), var(--mha-orange));
+            color: #121820;
+            text-decoration: none;
+            padding: 0.7rem 1.8rem;
+            border: 3px solid #121820;
+            box-shadow: 5px 5px 0 var(--mha-bright-green);
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            display: inline-block;
+            transform: skew(-5deg);
+        }
+
+        .btn-plus-ultra:hover {
+            transform: skew(-5deg) translate(-2px, -2px);
+            box-shadow: 7px 7px 0 #ffffff;
+        }
+
+        /* コミックスタイル レビューカードグリッド */
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3.5rem;
+        }
+
+        /* 個別レビューカード */
+        .card {
+            background-color: var(--mha-panel-bg);
+            border: 3px solid #2f3e50;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: var(--mha-bright-green);
+            box-shadow: 10px 10px 0 var(--mha-teal);
+        }
+
+        /* カードサムネイル画像ラッパー */
+        .card-img-wrap {
+            width: 100%;
+            height: 190px;
+            background-color: #121820;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 3px solid #2f3e50;
+        }
+
+        .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+        .card-img-placeholder {
+            font-family: 'Bangers', cursive;
+            font-size: 1.8rem;
+            color: #475569;
+            letter-spacing: 2px;
+        }
+
+        /* 星評価バッジ (画像の右上に傾けて配置) */
+        .card-rating-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--mha-yellow);
+            color: #121820;
+            font-family: 'Bangers', cursive;
+            font-size: 1.1rem;
+            padding: 0.2rem 0.7rem;
+            border: 2px solid #121820;
+            box-shadow: 3px 3px 0 var(--mha-orange);
+            transform: rotate(3deg);
+        }
+
+        /* カード本文エリア */
+        .card-body {
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .anime-tag {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--mha-bright-green);
+            background: rgba(15, 163, 127, 0.2);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--mha-bright-green);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        /* 本文プレビュー (3行を超えた場合は省略記号...を表示) */
+        .card-content {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 1.2rem;
+            flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            border-top: 1px dashed #334155;
+            padding-top: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        /* 雄英高校 批評特科チーム紹介セクション */
+        .hero-banner {
+            background: linear-gradient(135deg, #16202c, #0f172a);
+            border: 4px solid var(--mha-teal);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 8px 8px 0 #0b6623;
+            margin-top: 2rem;
+        }
+
+        .hero-banner-title {
+            font-family: 'Bangers', sans-serif;
+            font-size: 2.2rem;
+            color: var(--mha-yellow);
+            text-shadow: 2px 2px 0 var(--mha-orange);
+            margin-bottom: 1.2rem;
+            letter-spacing: 1px;
+        }
+
+        .hero-team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .hero-chara-card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: 0.2s;
+        }
+
+        .hero-chara-card:hover {
+            border-color: var(--mha-yellow);
+            transform: translateY(-4px);
+        }
+
+        .hero-avatar {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            border: 3px solid var(--mha-bright-green);
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .hero-info h4 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .hero-info p {
+            color: var(--mha-bright-green);
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .hero-info span {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            display: block;
+            margin-top: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 最上部ナビゲーション: 言語切替 & 画面遷移リンク -->
+<nav class="top-nav">
+    <!-- 言語切り替えボタングループ -->
+    <div class="lang-switch">
+        <button type="button" class="lang-btn active" id="btnKo" onclick="changeLang('ko')">한국어</button>
+        <button type="button" class="lang-btn" id="btnJa" onclick="changeLang('ja')">日本語</button>
+        <button type="button" class="lang-btn" id="btnEn" onclick="changeLang('en')">English</button>
+    </div>
+
+    <!-- 認証状態表示エリア (未ログイン時はlogin.html / join.htmlへのリンク、ログイン時はユーザー名とログアウトボタン) -->
+    <div class="auth-group" id="authArea">
+        <!-- 未ログイン時のナビゲーションリンク -->
+        <div id="guestNav" style="display: flex; gap: 8px;">
+            <a href="login.html" class="nav-btn" id="t-navLogin">로그인</a>
+            <a href="join.html" class="nav-btn join-btn" id="t-navJoin">회원가입</a>
+        </div>
+
+        <!-- ログイン中のナビゲーション表示 (JSで切り替え制御) -->
+        <div id="userNav" style="display: none; align-items: center; gap: 10px;">
+            <span style="font-size: 0.9rem; color: var(--mha-bright-green); font-weight: bold;">
+                ⚡ <span id="navUserName"></span> HERO
+            </span>
+            <!-- ログアウト処理: api/auth へPOST送信してセッション破棄 -->
+            <form action="api/auth" method="POST" style="margin: 0;">
+                <button type="submit" class="nav-btn logout-btn" id="t-navLogout">로그아웃</button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- ヒーローメインヘッダー -->
+<header>
+    <div class="header-tag" id="t-tag">SMASH YOUR LIMITS!</div>
+    <h1 class="main-title">ANILOG REVIEW ARCHIVE</h1>
+    <p class="sub-slogan" id="t-slogan">PLUS ULTRA! 당신만의 애니메이션 리뷰</p>
+</header>
+
+<div class="container">
+    <!-- アクションバー (投稿件数カウント & 新規投稿画面へのボタン) -->
+    <div class="action-bar">
+        <div class="badge-count">
+            <span id="t-feed">히어로 리뷰 피드</span>: <span id="totalCount" style="color: var(--mha-bright-green); font-size: 1.2rem;">0</span>
+        </div>
+        <div>
+            <a href="write.html" class="btn-plus-ultra" id="t-newPost">+ 새 리뷰 작성하기</a>
+        </div>
+    </div>
+
+    <!-- レビュー一覧カードグリッド (JSで動的に挿入) -->
+    <div class="review-grid" id="reviewGrid"></div>
+
+    <!-- 雄英高校 批評特科チーム紹介バナー -->
+    <section class="hero-banner">
+        <h2 class="hero-banner-title" id="t-heroTeam">⚡ U.A. CRITIC DIVISION (심사단)</h2>
+        <div class="hero-team-grid">
+            <!-- デク (緑谷出久) -->
+            <div class="hero-chara-card">
+                <div class="hero-avatar">🥦</div>
+                <div class="hero-info">
+                    <h4>데쿠 (Midoriya)</h4>
+                    <p id="t-c1-quirk">개성: 원포올 분석</p>
+                    <span id="t-c1-desc">명장면과 연출을 철저히 데이터화하여 리뷰합니다.</span>
+                </div>
+            </div>
+            <!-- バクゴウ (爆豪勝己) -->
+            <div class="hero-chara-card">
+                <div class="hero-avatar" style="border-color: var(--mha-orange);">💥</div>
+                <div class="hero-info">
+                    <h4>바쿠고 (Bakugo)</h4>
+                    <p id="t-c2-quirk" style="color: var(--mha-orange);">개성: 폭파 액션 비평</p>
+                    <span id="t-c2-desc">어설픈 전투 작화는 가차 없이 폭파 평가합니다.</span>
+                </div>
+            </div>
+            <!-- トドロキ (轟焦凍) -->
+            <div class="hero-chara-card">
+                <div class="hero-avatar" style="border-color: #38bdf8;">❄️</div>
+                <div class="hero-info">
+                    <h4>토도로키 (Todoroki)</h4>
+                    <p id="t-c3-quirk" style="color: #38bdf8;">개성: 반랭반열 냉철 심사</p>
+                    <span id="t-c3-desc">스토리와 감정선 모두를 균형 있게 평론합니다.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    /**
+     * 多言語辞書オブジェクト (韓国語 / 日本語 / 英語)
+     * 【機能】ヘッダー、ボタン、キャラクター説明、空状態メッセージを動的置換します。
+     */
+    const i18n = {
+        ko: {
+            tag: "SMASH YOUR LIMITS!",
+            slogan: "PLUS ULTRA! 당신만의 애니메이션 리뷰",
+            feed: "히어로 리뷰 피드",
+            newPost: "+ 새 리뷰 작성하기",
+            heroTeam: "⚡ U.A. CRITIC DIVISION (심사단)",
+            navLogin: "로그인",
+            navJoin: "회원가입",
+            navLogout: "로그아웃",
+            c1_q: "개성: 원포올 분석",
+            c1_d: "명장면과 연출을 철저히 데이터화하여 리뷰합니다.",
+            c2_q: "개성: 폭파 액션 비평",
+            c2_d: "어설픈 전투 작화는 가차 없이 폭파 평가합니다.",
+            c3_q: "개성: 반랭반열 냉철 심사",
+            c3_d: "스토리와 감정선 모두를 균형 있게 평론합니다.",
+            writer: "작성자",
+            empty: "등록된 리뷰가 없습니다! 첫 번째 히어로 리뷰를 남겨보세요."
+        },
+        ja: {
+            tag: "SMASH YOUR LIMITS!",
+            slogan: "PLUS ULTRA! あなただけのアニメレビュー",
+            feed: "ヒーローレビューフィード",
+            newPost: "+ 新規レビュー投稿",
+            heroTeam: "⚡ 雄英高校 批評特科チーム",
+            navLogin: "ログイン",
+            navJoin: "会員登録",
+            navLogout: "ログアウト",
+            c1_q: "個性: ワン・フォー・オール分析",
+            c1_d: "名場面と演出を徹底的にデータ化してレビューします。",
+            c2_q: "個性: 爆破アクション批評",
+            c2_d: "中途半端な作画は容赦なく爆破評価を下します。",
+            c3_q: "個性: 半冷半燃 冷徹審査",
+            c3_d: "シナリオと感情曲線を高次元でバランスよく論評します。",
+            writer: "投稿者",
+            empty: "まだレビューがありません！最初のヒーローレビューを投稿してください。"
+        },
+        en: {
+            tag: "SMASH YOUR LIMITS!",
+            slogan: "PLUS ULTRA! YOUR ULTIMATE ANIME REVIEWS",
+            feed: "Hero Review Feed",
+            newPost: "+ POST NEW REVIEW",
+            heroTeam: "⚡ U.A. CRITIC DIVISION",
+            navLogin: "LOGIN",
+            navJoin: "SIGN UP",
+            navLogout: "LOGOUT",
+            c1_q: "Quirk: One For All Analysis",
+            c1_d: "Analyzes cinematic fight choreography with intense data notes.",
+            c2_q: "Quirk: Explosion Critique",
+            c2_d: "Blasts away weak animation with explosive honest feedback.",
+            c3_q: "Quirk: Half-Cold Half-Hot",
+            c3_d: "Judges pacing and character arcs with cool, balanced logic.",
+            writer: "Author",
+            empty: "No reviews registered yet! Be the first hero to post."
+        }
+    };
+
+    let currentLang = 'ko'; // デフォルト表示言語
+
+    /**
+     * 言語切り替え処理
+     * @param {string} lang - 選択された言語コード ('ko', 'ja', 'en')
+     */
+    function changeLang(lang) {
+        currentLang = lang;
+
+        // ボタンのアクティブ状態更新
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        if (lang === 'ko') document.getElementById('btnKo').classList.add('active');
+        if (lang === 'ja') document.getElementById('btnJa').classList.add('active');
+        if (lang === 'en') document.getElementById('btnEn').classList.add('active');
+
+        // 各UI要素のテキストを多言語辞書から反映
+        const t = i18n[lang];
+        document.getElementById('t-tag').innerText = t.tag;
+        document.getElementById('t-slogan').innerText = t.slogan;
+        document.getElementById('t-feed').innerText = t.feed;
+        document.getElementById('t-newPost').innerText = t.newPost;
+        document.getElementById('t-heroTeam').innerText = t.heroTeam;
+        document.getElementById('t-navLogin').innerText = t.navLogin;
+        document.getElementById('t-navJoin').innerText = t.navJoin;
+        document.getElementById('t-navLogout').innerText = t.navLogout;
+        document.getElementById('t-c1-quirk').innerText = t.c1_q;
+        document.getElementById('t-c1-desc').innerText = t.c1_d;
+        document.getElementById('t-c2-quirk').innerText = t.c2_q;
+        document.getElementById('t-c2-desc').innerText = t.c2_d;
+        document.getElementById('t-c3-quirk').innerText = t.c3_q;
+        document.getElementById('t-c3-desc').innerText = t.c3_d;
+
+        // 言語変更時にカード一覧の「投稿者」表記等を再レンダリング
+        loadReviews();
+    }
+
+    /**
+     * DOM読み込み完了時の初期化処理
+     * 【機能】1. ユーザーセッション認証状態の検証
+     *        2. レビュー投稿一覧の取得およびグリッド描画
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        checkAuthStatus();
+        loadReviews();
+    });
+
+    /**
+     * セッション認証状態チェック関数
+     * 【機能】AuthServlet(api/auth)からセッション情報を取得し、ログイン中ならユーザー名を表示、未ログインならログイン/登録リンクを表示します。
+     */
+    function checkAuthStatus() {
+        fetch('api/auth')
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.loginId) {
+                    // ログイン中: ゲストナビ非表示、ユーザーナビ表示
+                    document.getElementById('guestNav').style.display = 'none';
+                    document.getElementById('userNav').style.display = 'flex';
+                    document.getElementById('navUserName').innerText = data.loginName || data.loginId;
+                } else {
+                    // 未ログイン
+                    document.getElementById('guestNav').style.display = 'flex';
+                    document.getElementById('userNav').style.display = 'none';
+                }
+            })
+            .catch(() => {
+                // 通信エラー時も安全に未ログイン表示
+                document.getElementById('guestNav').style.display = 'flex';
+                document.getElementById('userNav').style.display = 'none';
+            });
+    }
+
+    /**
+     * アニメレビュー一覧取得およびカードグリッド描画関数
+     * 【機能】BoardServlet(api/board)から全件レビューJSONを取得し、アメコミ風カードを動的に構築します[cite: 1]。
+     */
+    function loadReviews() {
+        const grid = document.getElementById('reviewGrid');
+
+        fetch('api/board')
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                grid.innerHTML = '';
+                document.getElementById('totalCount').innerText = data ? data.length : 0;
+
+                // 投稿が0件の場合のプレースホルダー表示
+                if (!data || data.length === 0) {
+                    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #94a3b8; font-size: 1.1rem;">${i18n[currentLang].empty}</div>`;
+                    return;
+                }
+
+                // 取得したレビュー配列をカードDOMに変換
+                data.forEach(item => {
+                    // 添付画像が存在する場合はimgタグ、ない場合は「HERO VISION」代替表示[cite: 1]
+                    let imgHtml = (item.imageFile && item.imageFile.trim() !== '')
+                        ? `<img src="uploads/${encodeURIComponent(item.imageFile)}" alt="${escapeHtml(item.animeTitle)}" onerror="this.parentElement.innerHTML='<span class=\\'card-img-placeholder\\'>HERO VISION</span>'">`
+                        : `<span class="card-img-placeholder">HERO VISION</span>`;
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    // カードクリック時に詳細画面(detail.html?bno=X)へ遷移[cite: 1]
+                    card.onclick = () => location.href = `detail.html?bno=${item.bno}`;
+                    card.innerHTML = `
+                        <div class="card-img-wrap">
+                            ${imgHtml}
+                            <div class="card-rating-badge">★ ${item.rating || 5}.0</div>
+                        </div>
+                        <div class="card-body">
+                            <div><span class="anime-tag">${escapeHtml(item.animeTitle)}</span></div>
+                            <h3 class="card-title">${escapeHtml(item.title)}</h3>
+                            <p class="card-content">${escapeHtml(item.content)}</p>
+                            <div class="card-footer">
+                                <span>${i18n[currentLang].writer}: <b>${escapeHtml(item.writer)}</b></span>
+                                <span>${item.regDate || ''}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            })
+            .catch(err => {
+                console.error("レビューロードエラー:", err);
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ef4444;">レビューデータを読み込めませんでした。(サーバー接続を確認してください)</div>`;
+            });
+    }
+
+    /**
+     * XSS(クロスサイトスクリプティング)防御用エスケープ関数
+     * @param {string} str - 入力文字列
+     * @returns {string} サニタイズ済み文字列
+     */
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+</script>
+</body>
+</html>

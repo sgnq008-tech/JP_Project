@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- Mavenモデルバージョン (Maven 2 & 3 共通標準) -->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- プロジェクト固有識別子情報 -->
+    <groupId>com.jpanime</groupId>                     <!-- プロジェクト組織・グループID -->
+    <artifactId>jpanime-project</artifactId>            <!-- アーティファクト(成果物)名 -->
+    <version>1.0-SNAPSHOT</version>                    <!-- 開発バージョン番号 -->
+    <packaging>war</packaging>                         <!-- パッケージング形式: Webアプリケーションアーカイブ(WAR) -->
+
+    <!-- プロジェクト共通プロパティ設定 -->
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>               <!-- Javaソースコード準拠バージョン: Java 8 -->
+        <maven.compiler.target>1.8</maven.compiler.target>               <!-- 生成されるバイトコードバージョン: Java 8 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> <!-- ソースファイル読み込み・出力エンコーディング: UTF-8 -->
+    </properties>
+
+    <!-- ===================================================
+         外部ライブラリ依存関係 (Dependencies)
+         =================================================== -->
+    <dependencies>
+        <!-- [1] Java Servlet API 3.1 仕様ライブラリ -->
+        <!-- ※ <scope>provided</scope>: 実行時はTomcat等のコンテナ提供クラスを利用するためビルドWARから除外 -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- [2] Oracle Database JDBCドライバ (ojdbc8) -->
+        <!-- Oracle 11g/18c/21c等との通信、PreparedStatement、自動再接続・フォールバックを担うドライバ -->
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>19.3.0.0</version>
+        </dependency>
+
+        <!-- [3] jBCrypt: パスワード一方向ハッシュ化暗号化ライブラリ -->
+        <!-- 安全なソルト付与・ハッシュ照合による平文パスワードの暗号化をサポート -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
+    </dependencies>
+
+    <!-- ===================================================
+         ビルドおよび実行プラグイン設定 (Build Plugins)
+         =================================================== -->
+    <build>
+        <!-- 生成されるWARファイル名の指定 (jpanime-project.war) -->
+        <finalName>jpanime-project</finalName>
+        <plugins>
+            <!-- [プラグイン 1] Java コンパイラー プラグイン -->
+            <!-- Java 1.8 基準でのコンパイル及び文字エンコーディング(UTF-8)を強制適用 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- [プラグイン 2] WAR アーカイブ生成プラグイン -->
+            <!-- Webリソース配置フォルダの指定およびweb.xml省略の許可(サーブレット3.0+のアノテーションベース構成) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+                <configuration>
+                    <warSourceDirectory>${project.basedir}/src/main/webapp</warSourceDirectory>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+
+            <!-- [プラグイン 3] 埋め込み型 Tomcat 7 実行プラグイン -->
+            <!-- 「mvn tomcat7:run」コマンドにより外部Tomcatのインストール不要でローカルWebサーバーを起動 -->
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <port>8088</port>                                                 <!-- 稼働ポート番号 (http://localhost:8088/) -->
+                    <path>/</path>                                                    <!-- ルートコンテキストパス指定 -->
+                    <warSourceDirectory>${project.basedir}/src/main/webapp</warSourceDirectory> <!-- 静的リソース(HTML/CSS/JS)の参照元 -->
+                    <uriEncoding>UTF-8</uriEncoding>                                  <!-- URLクエリパラメータの日本語・多言語文字化け防止 -->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
