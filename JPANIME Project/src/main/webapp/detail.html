@@ -304,7 +304,27 @@
             margin-bottom: 6px;
         }
         .comment-writer { font-weight: bold; color: var(--mha-bright-green); }
-        .comment-body { font-size: 0.92rem; color: #f1f5f9; line-height: 1.5; }
+        .comment-body { font-size: 0.92rem; color: #f1f5f9; line-height: 1.5; word-break: break-word; }
+
+        /* v2: コメント削除ボタン (自分のコメントにのみ表示) */
+        .comment-meta { display: flex; align-items: center; gap: 10px; }
+        .comment-del {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            border-radius: 4px;
+            padding: 1px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .comment-del:hover { border-color: #ef4444; color: #ef4444; }
+
+        /* v2: モバイル対応 */
+        @media (max-width: 600px) {
+            .comment-input-box { flex-direction: column; }
+            .comment-header { flex-wrap: wrap; gap: 4px; }
+        }
     </style>
 </head>
 <body>
@@ -367,7 +387,7 @@
 
             <!-- コメント新規作成フォーム -->
             <div class="comment-input-box">
-                <input type="text" id="commentInput" placeholder="응원이나 코멘트를 남겨보세요! (PLUS ULTRA)">
+                <input type="text" id="commentInput" maxlength="300" placeholder="응원이나 코멘트를 남겨보세요! (PLUS ULTRA)">
                 <button type="button" class="btn-comment" onclick="submitComment()" id="t-btnComment">등록</button>
             </div>
 
@@ -400,7 +420,16 @@
             placeholder: "응원이나 코멘트를 남겨보세요! (PLUS ULTRA)",
             deleteConfirm: "정말 이 리뷰를 삭제하시겠습니까?",
             emptyComment: "댓글 내용을 입력해 주세요.",
-            needLogin: "로그인이 필요한 기능입니다. 로그인 페이지로 이동합니다."
+            needLogin: "로그인이 필요한 기능입니다. 로그인 페이지로 이동합니다.",
+            noComments: "아직 댓글이 없습니다. 첫 댓글을 남겨보세요!",
+            delComment: "삭제",
+            delCommentConfirm: "이 댓글을 삭제하시겠습니까?",
+            delCommentFail: "댓글을 삭제하지 못했습니다.",
+            commentFail: "댓글 등록에 실패했습니다.",
+            postDeleted: "리뷰가 삭제되었습니다.",
+            postDeleteFail: "리뷰 삭제에 실패했습니다.",
+            errInvalidInput: "입력 내용을 확인해 주세요. (제목 100자, 본문 1000자 이내)",
+            errInvalidImage: "이미지 파일(jpg, png, gif, webp)만 업로드할 수 있습니다."
         },
         ja: {
             writer: "投稿者",
@@ -413,7 +442,16 @@
             placeholder: "感想や応援コメントを残しましょう！(PLUS ULTRA)",
             deleteConfirm: "本当にこのレビューを削除しますか？",
             emptyComment: "コメント内容を入力してください。",
-            needLogin: "ログインが必要です。ログインページへ移動します。"
+            needLogin: "ログインが必要です。ログインページへ移動します。",
+            noComments: "まだコメントがありません。最初のコメントを残してみましょう！",
+            delComment: "削除",
+            delCommentConfirm: "このコメントを削除しますか？",
+            delCommentFail: "コメントを削除できませんでした。",
+            commentFail: "コメントの投稿に失敗しました。",
+            postDeleted: "レビューを削除しました。",
+            postDeleteFail: "レビューの削除に失敗しました。",
+            errInvalidInput: "入力内容をご確認ください。(タイトル100文字・本文1000文字以内)",
+            errInvalidImage: "アップロードできるのは画像ファイル(jpg, png, gif, webp)のみです。"
         },
         en: {
             writer: "Author",
@@ -426,7 +464,16 @@
             placeholder: "Leave your comment or critique! (PLUS ULTRA)",
             deleteConfirm: "Are you sure you want to delete this review?",
             emptyComment: "Please enter your comment.",
-            needLogin: "Please log in first. Redirecting to login page."
+            needLogin: "Please log in first. Redirecting to login page.",
+            noComments: "No comments yet. Be the first to comment!",
+            delComment: "Delete",
+            delCommentConfirm: "Delete this comment?",
+            delCommentFail: "Could not delete the comment.",
+            commentFail: "Failed to post the comment.",
+            postDeleted: "The review has been deleted.",
+            postDeleteFail: "Failed to delete the review.",
+            errInvalidInput: "Please check your input. (Title up to 100 chars, content up to 1000 chars)",
+            errInvalidImage: "Only image files (jpg, png, gif, webp) can be uploaded."
         }
     };
 
@@ -453,6 +500,9 @@
         document.getElementById('btnDelete').innerText = t.btnDelete;
         document.getElementById('t-btnComment').innerText = t.btnComment;
         document.getElementById('commentInput').placeholder = t.placeholder;
+
+        // コメント一覧の文言(空メッセージ・削除ボタン)も言語に合わせて描画し直す
+        if (currentReview) loadComments();
     }
 
     /**
@@ -514,6 +564,11 @@
 
                 // コメント一覧のロード
                 loadComments();
+
+                // 修正画面から ?error=xxx 付きで戻ってきた場合の通知
+                const errCode = urlParams.get('error');
+                const errMsg = { invalid_input: 'errInvalidInput', invalid_image: 'errInvalidImage' }[errCode];
+                if (errMsg) alert(i18n[currentLang][errMsg]);
             })
             .catch(err => {
                 console.error("データロード失敗:", err);
@@ -535,11 +590,12 @@
     function deletePost() {
         if (!confirm(i18n[currentLang].deleteConfirm)) return;
         fetch(`api/board?bno=${bno}&action=delete`, { method: 'POST' })
-            .then(() => {
-                alert("리뷰가 삭제되었습니다.");
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                alert(i18n[currentLang].postDeleted);
                 location.href = "board.html";
             })
-            .catch(err => alert("삭제 실패: " + err));
+            .catch(err => alert(i18n[currentLang].postDeleteFail + " (" + err.message + ")"));
     }
 
     /**
@@ -560,7 +616,7 @@
 
                 // コメントが0件の場合のプレースホルダー表示
                 if (!comments || comments.length === 0) {
-                    list.innerHTML = '<div style="color:#64748b; font-size:0.85rem; padding: 10px 0;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>';
+                    list.innerHTML = `<div style="color:#64748b; font-size:0.85rem; padding: 10px 0;">${i18n[currentLang].noComments}</div>`;
                     return;
                 }
 
@@ -568,17 +624,56 @@
                 comments.forEach(c => {
                     const item = document.createElement('div');
                     item.className = 'comment-item';
+                    // 自分のコメントにだけ削除ボタンを出す (サーバー側でも WRITER 一致を検証している)
+                    const isMine = currentUser && currentUser.loginId && currentUser.loginId === c.writer;
                     item.innerHTML = `
                         <div class="comment-header">
                           <span class="comment-writer">${escapeHtml(c.writer)}</span>
-                          <span>${c.regDate || ''}</span>
+                          <span class="comment-meta">
+                            <span>${c.regDate || ''}</span>
+                            ${isMine ? `<button type="button" class="comment-del" data-cno="${Number(c.cno)}">${i18n[currentLang].delComment}</button>` : ''}
+                          </span>
                         </div>
                         <div class="comment-body">${escapeHtml(c.content)}</div>
                     `;
+                    const delBtn = item.querySelector('.comment-del');
+                    if (delBtn) delBtn.addEventListener('click', () => deleteComment(c.cno));
                     list.appendChild(item);
                 });
             })
             .catch(err => console.error("コメントロード失敗:", err));
+    }
+
+    /**
+     * コメント削除関数 (自分のコメントのみ)
+     * 【機能】確認ダイアログ後、CommentServlet へ action=delete&cno=X を POST し、成功したら一覧を再取得します。
+     */
+    function deleteComment(cno) {
+        if (!confirm(i18n[currentLang].delCommentConfirm)) return;
+
+        const params = new URLSearchParams();
+        params.append('action', 'delete');
+        params.append('cno', cno);
+
+        fetch('api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body: params.toString()
+        })
+            .then(res => {
+                if (res.status === 401) {
+                    alert(i18n[currentLang].needLogin);
+                    location.href = 'login.html';
+                    return null;
+                }
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.json();
+            })
+            .then(data => { if (data && data.success) loadComments(); })
+            .catch(err => {
+                console.error("コメント削除エラー:", err);
+                alert(i18n[currentLang].delCommentFail);
+            });
     }
 
     /**
@@ -625,7 +720,7 @@
             })
             .catch(err => {
                 console.error("コメント登録エラー:", err);
-                alert("댓글 등록에 실패했습니다. (자세한 내용은 콘솔 확인)");
+                alert(i18n[currentLang].commentFail);
             });
     }
 

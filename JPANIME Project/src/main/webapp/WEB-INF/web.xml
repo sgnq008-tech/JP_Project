@@ -7,6 +7,14 @@
 
     <display-name>AniLog Project</display-name>
 
+    <!-- セッション設定: 有効期間60分 / Cookie を JavaScript から読めなくする (XSS 時のセッション窃取対策) -->
+    <session-config>
+        <session-timeout>60</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+    </session-config>
+
     <welcome-file-list>
         <welcome-file>board.html</welcome-file>
         <welcome-file>login.html</welcome-file>

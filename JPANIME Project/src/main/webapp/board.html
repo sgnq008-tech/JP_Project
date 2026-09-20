@@ -397,6 +397,109 @@
             display: block;
             margin-top: 0.2rem;
         }
+
+        /* ===================================================
+           v2: 検索・並び替えツールバー / ページネーション / エラーバナー
+           =================================================== */
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1.8rem;
+        }
+
+        .toolbar-input {
+            flex: 1 1 260px;
+            min-width: 0;
+            padding: 0.7rem 1rem;
+            background: #0b1118;
+            border: 2px solid #2f3e50;
+            border-radius: 6px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .toolbar-input:focus { border-color: var(--mha-bright-green); }
+
+        .toolbar-select {
+            padding: 0.7rem 0.8rem;
+            background: #0b1118;
+            border: 2px solid #2f3e50;
+            border-radius: 6px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .chip-btn {
+            padding: 0.62rem 1.1rem;
+            background: transparent;
+            border: 2px solid var(--mha-teal);
+            color: var(--mha-teal);
+            border-radius: 999px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .chip-btn:hover { border-color: var(--mha-bright-green); color: var(--mha-bright-green); }
+        .chip-btn.active { background: var(--mha-teal); color: #0b1118; }
+
+        .card-stats { display: flex; gap: 10px; }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: -1.5rem 0 3.5rem;
+        }
+
+        .page-btn {
+            min-width: 40px;
+            padding: 0.5rem 0.8rem;
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .page-btn:hover:not(:disabled) { border-color: var(--mha-bright-green); color: var(--mha-bright-green); }
+        .page-btn.active { background: var(--mha-teal); border-color: var(--mha-teal); color: #0b1118; }
+        .page-btn:disabled { opacity: 0.4; cursor: default; }
+
+        .error-banner {
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid #ef4444;
+            color: #fecaca;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        /* ===================================================
+           v2: モバイル対応 (スマートフォン幅)
+           =================================================== */
+        @media (max-width: 640px) {
+            .top-nav { padding: 0.6rem 1rem; flex-wrap: wrap; gap: 8px; }
+            .main-title { font-size: 2.2rem; }
+            .container { padding: 0 1rem; }
+            .review-grid { grid-template-columns: 1fr; gap: 1.4rem; }
+            .action-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .toolbar-select, .chip-btn { flex: 1 1 auto; }
+            .hero-banner { padding: 1.2rem; }
+        }
     </style>
 </head>
 <body>
@@ -439,6 +542,9 @@
 </header>
 
 <div class="container">
+    <!-- エラーバナー (?error=... 付きで遷移してきた場合に表示) -->
+    <div class="error-banner" id="errorBanner" style="display: none;"></div>
+
     <!-- アクションバー (投稿件数カウント & 新規投稿画面へのボタン) -->
     <div class="action-bar">
         <div class="badge-count">
@@ -449,8 +555,23 @@
         </div>
     </div>
 
+    <!-- 検索・並び替え・「自分のレビュー」絞り込み -->
+    <div class="toolbar">
+        <input type="search" id="searchInput" class="toolbar-input" maxlength="100" autocomplete="off">
+        <select id="sortSelect" class="toolbar-select">
+            <option value="latest" id="t-sortLatest"></option>
+            <option value="oldest" id="t-sortOldest"></option>
+            <option value="rating" id="t-sortRating"></option>
+            <option value="hits" id="t-sortHits"></option>
+        </select>
+        <button type="button" class="chip-btn" id="mineBtn" style="display: none;"></button>
+    </div>
+
     <!-- レビュー一覧カードグリッド (JSで動的に挿入) -->
     <div class="review-grid" id="reviewGrid"></div>
+
+    <!-- ページネーション (JSで動的に挿入) -->
+    <nav class="pagination" id="pagination"></nav>
 
     <!-- 雄英高校 批評特科チーム紹介バナー -->
     <section class="hero-banner">
@@ -490,7 +611,7 @@
 <script>
     /**
      * 多言語辞書オブジェクト (韓国語 / 日本語 / 英語)
-     * 【機能】ヘッダー、ボタン、キャラクター説明、空状態メッセージを動的置換します。
+     * 【機能】ヘッダー、ボタン、キャラクター説明、空状態メッセージ、検索UIを動的置換します。
      */
     const i18n = {
         ko: {
@@ -509,7 +630,27 @@
             c3_q: "개성: 반랭반열 냉철 심사",
             c3_d: "스토리와 감정선 모두를 균형 있게 평론합니다.",
             writer: "작성자",
-            empty: "등록된 리뷰가 없습니다! 첫 번째 히어로 리뷰를 남겨보세요."
+            empty: "등록된 리뷰가 없습니다! 첫 번째 히어로 리뷰를 남겨보세요.",
+            noResult: "검색 결과가 없습니다. 다른 검색어를 입력해 보세요.",
+            noMine: "아직 작성한 리뷰가 없습니다.",
+            searchPlaceholder: "작품명·제목·내용으로 검색...",
+            sortLatest: "최신순",
+            sortOldest: "오래된순",
+            sortRating: "별점 높은순",
+            sortHits: "조회수순",
+            mineBtn: "내 리뷰만",
+            prev: "‹ 이전",
+            next: "다음 ›",
+            loadError: "리뷰 데이터를 불러오지 못했습니다. (서버 연결을 확인해 주세요)",
+            errors: {
+                invalid_input: "입력 내용을 확인해 주세요. (제목 100자, 본문 1000자 이내)",
+                invalid_image: "이미지 파일(jpg, png, gif, webp)만 업로드할 수 있습니다.",
+                invalid_bno: "잘못된 접근입니다.",
+                forbidden: "본인이 작성한 리뷰만 수정할 수 있습니다.",
+                save_db: "리뷰 저장에 실패했습니다.",
+                update_db: "리뷰 수정에 실패했습니다.",
+                delete_fail: "리뷰 삭제에 실패했습니다."
+            }
         },
         ja: {
             tag: "SMASH YOUR LIMITS!",
@@ -527,7 +668,27 @@
             c3_q: "個性: 半冷半燃 冷徹審査",
             c3_d: "シナリオと感情曲線を高次元でバランスよく論評します。",
             writer: "投稿者",
-            empty: "まだレビューがありません！最初のヒーローレビューを投稿してください。"
+            empty: "まだレビューがありません！最初のヒーローレビューを投稿してください。",
+            noResult: "該当するレビューがありません。別のキーワードでお試しください。",
+            noMine: "まだ投稿したレビューがありません。",
+            searchPlaceholder: "作品名・タイトル・本文で検索...",
+            sortLatest: "新着順",
+            sortOldest: "古い順",
+            sortRating: "評価の高い順",
+            sortHits: "閲覧数順",
+            mineBtn: "自分のレビューのみ",
+            prev: "‹ 前へ",
+            next: "次へ ›",
+            loadError: "レビューデータを読み込めませんでした。(サーバー接続を確認してください)",
+            errors: {
+                invalid_input: "入力内容をご確認ください。(タイトル100文字・本文1000文字以内)",
+                invalid_image: "アップロードできるのは画像ファイル(jpg, png, gif, webp)のみです。",
+                invalid_bno: "不正なアクセスです。",
+                forbidden: "自分が投稿したレビューのみ編集できます。",
+                save_db: "レビューの保存に失敗しました。",
+                update_db: "レビューの更新に失敗しました。",
+                delete_fail: "レビューの削除に失敗しました。"
+            }
         },
         en: {
             tag: "SMASH YOUR LIMITS!",
@@ -545,11 +706,41 @@
             c3_q: "Quirk: Half-Cold Half-Hot",
             c3_d: "Judges pacing and character arcs with cool, balanced logic.",
             writer: "Author",
-            empty: "No reviews registered yet! Be the first hero to post."
+            empty: "No reviews registered yet! Be the first hero to post.",
+            noResult: "No reviews matched your search. Try a different keyword.",
+            noMine: "You haven't posted any reviews yet.",
+            searchPlaceholder: "Search by anime, title or content...",
+            sortLatest: "Newest",
+            sortOldest: "Oldest",
+            sortRating: "Top rated",
+            sortHits: "Most viewed",
+            mineBtn: "My reviews only",
+            prev: "‹ Prev",
+            next: "Next ›",
+            loadError: "Could not load reviews. (Please check the server connection)",
+            errors: {
+                invalid_input: "Please check your input. (Title up to 100 chars, content up to 1000 chars)",
+                invalid_image: "Only image files (jpg, png, gif, webp) can be uploaded.",
+                invalid_bno: "Invalid request.",
+                forbidden: "You can only edit your own reviews.",
+                save_db: "Failed to save the review.",
+                update_db: "Failed to update the review.",
+                delete_fail: "Failed to delete the review."
+            }
         }
     };
 
     let currentLang = 'ko'; // デフォルト表示言語
+
+    /**
+     * 一覧の絞り込み状態 (URLクエリと同期: ?q=&sort=&page=&mine=1)
+     * → ブラウザの「戻る」や URL 共有で同じ検索結果を再現できる
+     */
+    const state = { q: '', sort: 'latest', page: 1, mine: false };
+    // ?error=xxx は最初のURLから1度だけ読み取る (syncUrl() がアドレスバーを書き換えるため)
+    const initialError = new URLSearchParams(location.search).get('error');
+    const PAGE_SIZE = 9;
+    let searchTimer = null;
 
     /**
      * 言語切り替え処理
@@ -566,93 +757,180 @@
 
         // 各UI要素のテキストを多言語辞書から反映
         const t = i18n[lang];
-        document.getElementById('t-tag').innerText = t.tag;
-        document.getElementById('t-slogan').innerText = t.slogan;
-        document.getElementById('t-feed').innerText = t.feed;
-        document.getElementById('t-newPost').innerText = t.newPost;
-        document.getElementById('t-heroTeam').innerText = t.heroTeam;
-        document.getElementById('t-navLogin').innerText = t.navLogin;
-        document.getElementById('t-navJoin').innerText = t.navJoin;
-        document.getElementById('t-navLogout').innerText = t.navLogout;
-        document.getElementById('t-c1-quirk').innerText = t.c1_q;
-        document.getElementById('t-c1-desc').innerText = t.c1_d;
-        document.getElementById('t-c2-quirk').innerText = t.c2_q;
-        document.getElementById('t-c2-desc').innerText = t.c2_d;
-        document.getElementById('t-c3-quirk').innerText = t.c3_q;
-        document.getElementById('t-c3-desc').innerText = t.c3_d;
+        const setText = (id, text) => { document.getElementById(id).innerText = text; };
+        setText('t-tag', t.tag);
+        setText('t-slogan', t.slogan);
+        setText('t-feed', t.feed);
+        setText('t-newPost', t.newPost);
+        setText('t-heroTeam', t.heroTeam);
+        setText('t-navLogin', t.navLogin);
+        setText('t-navJoin', t.navJoin);
+        setText('t-navLogout', t.navLogout);
+        setText('t-c1-quirk', t.c1_q);
+        setText('t-c1-desc', t.c1_d);
+        setText('t-c2-quirk', t.c2_q);
+        setText('t-c2-desc', t.c2_d);
+        setText('t-c3-quirk', t.c3_q);
+        setText('t-c3-desc', t.c3_d);
 
-        // 言語変更時にカード一覧の「投稿者」表記等を再レンダリング
+        // v2: 検索UI
+        document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+        setText('t-sortLatest', t.sortLatest);
+        setText('t-sortOldest', t.sortOldest);
+        setText('t-sortRating', t.sortRating);
+        setText('t-sortHits', t.sortHits);
+        setText('mineBtn', t.mineBtn);
+
+        showErrorFromQuery();
+
+        // 言語変更時にカード一覧の「投稿者」表記等を再レンダリング (ページ位置は維持)
         loadReviews();
     }
 
     /**
      * DOM読み込み完了時の初期化処理
-     * 【機能】1. ユーザーセッション認証状態の検証
-     *        2. レビュー投稿一覧の取得およびグリッド描画
+     * 【機能】1. URLクエリから検索状態を復元
+     *        2. 検索・並び替え・絞り込みのイベント登録
+     *        3. ユーザーセッション認証状態の検証
+     *        4. レビュー投稿一覧の取得およびグリッド描画
      */
     document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(location.search);
+        state.q = params.get('q') || '';
+        state.sort = ['latest', 'oldest', 'rating', 'hits'].includes(params.get('sort')) ? params.get('sort') : 'latest';
+        state.page = Math.max(1, parseInt(params.get('page'), 10) || 1);
+        state.mine = params.get('mine') === '1';
+
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        searchInput.value = state.q;
+        sortSelect.value = state.sort;
+
+        // 検索: 入力が止まってから 300ms 後に実行 (1文字ごとにサーバーへ問い合わせない)
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                state.q = searchInput.value.trim();
+                state.page = 1;
+                loadReviews();
+            }, 300);
+        });
+        sortSelect.addEventListener('change', () => {
+            state.sort = sortSelect.value;
+            state.page = 1;
+            loadReviews();
+        });
+        document.getElementById('mineBtn').addEventListener('click', () => {
+            state.mine = !state.mine;
+            state.page = 1;
+            loadReviews();
+        });
+
         checkAuthStatus();
-        loadReviews();
+        changeLang(currentLang); // 文言反映 + 初回の一覧取得
     });
 
     /**
      * セッション認証状態チェック関数
-     * 【機能】AuthServlet(api/auth)からセッション情報を取得し、ログイン中ならユーザー名を表示、未ログインならログイン/登録リンクを表示します。
+     * 【機能】AuthServlet(api/auth)からセッション情報を取得し、ログイン中ならユーザー名と
+     *        「自分のレビューのみ」ボタンを表示、未ログインならログイン/登録リンクを表示します。
      */
     function checkAuthStatus() {
         fetch('api/auth')
             .then(res => res.json())
             .then(data => {
-                if (data && data.loginId) {
-                    // ログイン中: ゲストナビ非表示、ユーザーナビ表示
-                    document.getElementById('guestNav').style.display = 'none';
-                    document.getElementById('userNav').style.display = 'flex';
+                const loggedIn = !!(data && data.loginId);
+                document.getElementById('guestNav').style.display = loggedIn ? 'none' : 'flex';
+                document.getElementById('userNav').style.display = loggedIn ? 'flex' : 'none';
+                document.getElementById('mineBtn').style.display = loggedIn ? 'inline-block' : 'none';
+                if (loggedIn) {
                     document.getElementById('navUserName').innerText = data.loginName || data.loginId;
-                } else {
-                    // 未ログイン
-                    document.getElementById('guestNav').style.display = 'flex';
-                    document.getElementById('userNav').style.display = 'none';
+                } else if (state.mine) {
+                    state.mine = false; // 未ログインで mine=1 の URL を開いた場合は解除
+                    loadReviews();
                 }
             })
             .catch(() => {
-                // 通信エラー時も安全に未ログイン表示
                 document.getElementById('guestNav').style.display = 'flex';
                 document.getElementById('userNav').style.display = 'none';
+                document.getElementById('mineBtn').style.display = 'none';
             });
+    }
+
+    /** 現在の絞り込み状態をアドレスバーへ反映 (履歴は増やさない) */
+    function syncUrl() {
+        const params = new URLSearchParams();
+        if (state.q) params.set('q', state.q);
+        if (state.sort !== 'latest') params.set('sort', state.sort);
+        if (state.page > 1) params.set('page', state.page);
+        if (state.mine) params.set('mine', '1');
+        const qs = params.toString();
+        history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+    }
+
+    /** ?error=xxx 付きで遷移してきた場合に、エラーバナーを表示する */
+    function showErrorFromQuery() {
+        const code = initialError;
+        const banner = document.getElementById('errorBanner');
+        const msg = code && i18n[currentLang].errors[code];
+        if (msg) {
+            banner.innerText = msg;
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 
     /**
      * アニメレビュー一覧取得およびカードグリッド描画関数
-     * 【機能】BoardServlet(api/board)から全件レビューJSONを取得し、アメコミ風カードを動的に構築します[cite: 1]。
+     * 【機能】BoardServlet(api/board)へ検索条件(q/sort/page/mine)を渡し、該当ページ分だけを取得して
+     *        アメコミ風カードを構築します。
      */
     function loadReviews() {
         const grid = document.getElementById('reviewGrid');
 
-        fetch('api/board')
+        const params = new URLSearchParams();
+        if (state.q) params.set('q', state.q);
+        params.set('sort', state.sort);
+        params.set('page', state.page);
+        params.set('size', PAGE_SIZE);
+        if (state.mine) params.set('mine', '1');
+
+        document.getElementById('mineBtn').classList.toggle('active', state.mine);
+        syncUrl();
+
+        fetch('api/board?' + params.toString())
             .then(res => {
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 return res.json();
             })
             .then(data => {
+                const items = (data && data.items) ? data.items : [];
                 grid.innerHTML = '';
-                document.getElementById('totalCount').innerText = data ? data.length : 0;
+                document.getElementById('totalCount').innerText = data && data.total ? data.total : 0;
 
-                // 投稿が0件の場合のプレースホルダー表示
-                if (!data || data.length === 0) {
-                    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #94a3b8; font-size: 1.1rem;">${i18n[currentLang].empty}</div>`;
+                // サーバー側で範囲外ページが丸められた場合は状態を合わせる
+                if (data && data.page) state.page = data.page;
+
+                // 0件の場合のプレースホルダー (状況別メッセージ)
+                if (items.length === 0) {
+                    const t = i18n[currentLang];
+                    const msg = state.mine ? t.noMine : (state.q ? t.noResult : t.empty);
+                    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #94a3b8; font-size: 1.1rem;">${msg}</div>`;
+                    renderPagination(1, 1);
                     return;
                 }
 
                 // 取得したレビュー配列をカードDOMに変換
-                data.forEach(item => {
-                    // 添付画像が存在する場合はimgタグ、ない場合は「HERO VISION」代替表示[cite: 1]
+                items.forEach(item => {
+                    // 添付画像が存在する場合はimgタグ、ない場合は「HERO VISION」代替表示
                     let imgHtml = (item.imageFile && item.imageFile.trim() !== '')
                         ? `<img src="uploads/${encodeURIComponent(item.imageFile)}" alt="${escapeHtml(item.animeTitle)}" onerror="this.parentElement.innerHTML='<span class=\\'card-img-placeholder\\'>HERO VISION</span>'">`
                         : `<span class="card-img-placeholder">HERO VISION</span>`;
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    // カードクリック時に詳細画面(detail.html?bno=X)へ遷移[cite: 1]
+                    // カードクリック時に詳細画面(detail.html?bno=X)へ遷移
                     card.onclick = () => location.href = `detail.html?bno=${item.bno}`;
                     card.innerHTML = `
                         <div class="card-img-wrap">
@@ -665,17 +943,68 @@
                             <p class="card-content">${escapeHtml(item.content)}</p>
                             <div class="card-footer">
                                 <span>${i18n[currentLang].writer}: <b>${escapeHtml(item.writer)}</b></span>
-                                <span>${item.regDate || ''}</span>
+                                <span class="card-stats">
+                                    <span title="views">👁 ${item.hitCount || 0}</span>
+                                    <span title="comments">💬 ${item.commentCount || 0}</span>
+                                </span>
                             </div>
                         </div>
                     `;
                     grid.appendChild(card);
                 });
+
+                renderPagination(data.page, data.totalPages);
             })
             .catch(err => {
                 console.error("レビューロードエラー:", err);
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ef4444;">レビューデータを読み込めませんでした。(サーバー接続を確認してください)</div>`;
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ef4444;">${i18n[currentLang].loadError}</div>`;
+                renderPagination(1, 1);
             });
+    }
+
+    /**
+     * ページネーション描画
+     * 表示例: ‹ 前へ  1 … 4 [5] 6 … 12  次へ ›   (現在ページの前後2ページ + 先頭/末尾)
+     */
+    function renderPagination(page, totalPages) {
+        const nav = document.getElementById('pagination');
+        nav.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const t = i18n[currentLang];
+        const addBtn = (label, target, opts = {}) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'page-btn' + (opts.active ? ' active' : '');
+            btn.innerText = label;
+            btn.disabled = !!opts.disabled;
+            if (!opts.disabled && !opts.active) {
+                btn.addEventListener('click', () => {
+                    state.page = target;
+                    loadReviews();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+            nav.appendChild(btn);
+        };
+
+        addBtn(t.prev, page - 1, { disabled: page <= 1 });
+
+        let last = 0;
+        for (let p = 1; p <= totalPages; p++) {
+            const show = p === 1 || p === totalPages || Math.abs(p - page) <= 2;
+            if (!show) continue;
+            if (last && p - last > 1) {
+                const dots = document.createElement('span');
+                dots.innerText = '…';
+                dots.style.cssText = 'align-self:center; color:#64748b;';
+                nav.appendChild(dots);
+            }
+            addBtn(String(p), p, { active: p === page });
+            last = p;
+        }
+
+        addBtn(t.next, page + 1, { disabled: page >= totalPages });
     }
 
     /**
@@ -685,7 +1014,7 @@
      */
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 </script>
 </body>

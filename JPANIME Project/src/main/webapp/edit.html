@@ -295,19 +295,19 @@
     <!-- 1. アニメ作品名入力欄 -->
     <div class="form-group">
       <label for="animeTitle" data-i18n="animeTitleLabel">アニメ作品名</label>
-      <input type="text" id="animeTitle" name="animeTitle" required>
+      <input type="text" id="animeTitle" name="animeTitle" maxlength="100" required>
     </div>
 
     <!-- 2. レビュータイトル入力欄 -->
     <div class="form-group">
       <label for="title" data-i18n="postTitleLabel">レビュータイトル</label>
-      <input type="text" id="title" name="title" required>
+      <input type="text" id="title" name="title" maxlength="100" required>
     </div>
 
     <!-- 3. レビュー本文テキストエリア -->
     <div class="form-group">
       <label for="content" data-i18n="postContentLabel">感想・レビュー本文</label>
-      <textarea id="content" name="content" required></textarea>
+      <textarea id="content" name="content" maxlength="1000" required></textarea>
     </div>
 
     <!-- 4. AI感情分析＆星評価アシスタントパネル -->
@@ -339,7 +339,7 @@
     <!-- 6. サムネイル画像再添付 & プレビュー表示枠 -->
     <div class="form-group">
       <label for="animeImage" data-i18n="imageLabel">アニメ画像・ポスター添付</label>
-      <input type="file" id="animeImage" name="animeImage" accept="image/*" onchange="previewNewImage(event)">
+      <input type="file" id="animeImage" name="animeImage" accept="image/jpeg,image/png,image/gif,image/webp" onchange="previewNewImage(event)">
       <div class="notice" data-i18n="keepImageNotice">※新しい画像を選択しない場合、既存の画像が維持されます。</div>
       <div class="preview-box" id="previewBox" style="display: none;">
         <img id="imgPreview" src="" alt="Preview">
@@ -370,7 +370,7 @@
    */
   Promise.all([
     fetch('api/auth').then(res => res.json()),
-    bno ? fetch(`api/board?bno=${bno}`).then(res => res.json()) : Promise.resolve(null)
+    bno ? fetch(`api/board?bno=${bno}&edit=1`).then(res => res.json()) : Promise.resolve(null)
   ])
           .then(([authData, postData]) => {
             // 1. 未ログインチェック
@@ -455,6 +455,7 @@
     const params = new URLSearchParams();
     params.append('title', title);
     params.append('content', content);
+    params.append('lang', (typeof currentLang !== 'undefined' && currentLang) ? currentLang : 'ja'); // 分析結果の言語
 
     fetch('api/intelligence', {
       method: 'POST',
@@ -480,7 +481,7 @@
 
               // 抽出タグバッジの生成
               const tagsBox = document.getElementById('aiTagsContainer');
-              tagsBox.innerHTML = '<b>自動抽出タグ:</b> ';
+              tagsBox.innerHTML = '<b>' + ((typeof i18n !== 'undefined' && i18n[currentLang] && i18n[currentLang].aiTagsLabel) || 'Tags:') + '</b> ';
               data.tags.forEach(tag => {
                 const badge = document.createElement('span');
                 badge.className = 'ai-tag-badge';

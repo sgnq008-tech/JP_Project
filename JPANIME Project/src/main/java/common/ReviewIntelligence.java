@@ -1,11 +1,30 @@
 package common;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * AniLog AI レビュー知能型テキスト分析エンジン (Review Intelligence Engine)
- * 自然言語の感情分析、スマート評価点算出、タグ自動抽出を担当
+ * AniLog レビュー分析エンジン (ルールベース)
+ *
+ * 【方式】
+ *   機械学習ではなく「キーワード辞書 + ルール」による感情分析・タグ抽出。
+ *   辞書のキーワードが本文に含まれる数から星評価を算出する (基本3点、肯定+1 / 否定-1)。
+ *
+ * 【v2 での改善】
+ *   1. 英語キーワードは単語境界で判定 (例: "bad" が "badge" に誤反応しない / "sf" が "transformers" に反応しない)
+ *   2. 英語の否定表現を考慮 (例: "not bad" は肯定、"not great" は否定として数える)
+ *   3. タグ辞書内の誤字を修正 ("철学" → "철학")
+ *
+ * 【既知の限界】
+ *   - 日本語・韓国語は部分一致のみで、否定形(例: 「つまらなくない」)は判定できない。
+ *     形態素解析(Kuromoji 等)や LLM API への置き換えが次のステップ。
+ *   - 皮肉・文脈依存の表現は判定できない。
  */
 public class ReviewIntelligence {
 
@@ -23,97 +42,99 @@ public class ReviewIntelligence {
             "disappointing", "boring", "bad", "worst", "poor", "waste", "mediocre", "dull"
     };
 
-    // ジャンル別キーワードマッピング辞書
+    // ジャンル別キーワードマッピング辞書 (先頭要素がタグ名、以降がキーワード)
     private static final String[][] TAG_RULES = {
             {"#バトルアクション", "전투", "액션", "작화", "카메라", "전쟁", "戦闘", "バトル", "アクション", "作画", "action", "battle", "fight"},
             {"#感動・名作", "눈물", "감동", "성장", "희망", "눈물샘", "感動", "涙", "泣ける", "成長", "emotional", "touching", "tears"},
             {"#ダークファンタジー", "어두", "주술", "악마", "사변", "절망", "呪術", "ダーク", "絶望", "悪魔", "dark", "sorcery", "demons"},
-            {"#SF・メカニック", "로봇", "건담", "메카", "우주", "정치", "철学", "ガンダム", "メカ", "SF", "ロボット", "宇宙", "mecha", "gundam", "scifi"},
+            {"#SF・メカニック", "로봇", "건담", "메카", "우주", "정치", "철학", "ガンダム", "メカ", "SF", "ロボット", "宇宙", "mecha", "gundam", "scifi"},
             {"#日常・コメディ", "일상", "개그", "웃김", "유쾌", "치유", "日常", "ギャグ", "コメディ", "面白い", "癒し", "comedy", "funny", "slice of life"}
     };
+
+    // 英語の否定語 (直前に付くと極性が反転する)
+    private static final String NEGATORS =
+            "(?:not|never|no|isn't|wasn't|aren't|weren't|don't|doesn't|didn't|hardly)";
+    // 否定語と本文キーワードの間に入り得る強調語・冠詞
+    private static final String FILLERS = "(?:(?:very|that|so|really|too|the|a)\\s+)?";
+
+    // 英語キーワード用の正規表現キャッシュ (キーワード → Pattern)
+    private static final Map<String, Pattern> SENTIMENT_PATTERNS = new ConcurrentHashMap<>();
+    private static final Map<String, Pattern> WORD_PATTERNS = new ConcurrentHashMap<>();
 
     // 分析結果を保持する内部クラス
     public static class AnalysisResult {
         public int recommendedRating;       // 推奨星評価 (1~5)
         public String sentimentLabel;       // 感情分析ラベル
-        public String sentimentScore;       // 感情スコア (0~100%)
-        public List<String> extractedTags;  // 自動抽出されたスマートタグ
-        public String aiSummary;            // AIによる自動サマリー評価
+        public String sentimentScore;       // 信頼度スコア (%)
+        public List<String> extractedTags;  // 自動抽出されたタグ
+        public String aiSummary;            // 自動サマリー
 
         public AnalysisResult() {
             this.extractedTags = new ArrayList<>();
         }
 
         // サーブレット応答用のJSONシリアライズ処理
+        // (フロントエンドが参照するキー名 "tags" に合わせるため Map 経由で出力)
         public String toJson() {
-            StringBuilder sb = new StringBuilder("{");
-            sb.append("\"recommendedRating\":").append(recommendedRating).append(",");
-            sb.append("\"sentimentLabel\":\"").append(escape(sentimentLabel)).append("\",");
-            sb.append("\"sentimentScore\":\"").append(escape(sentimentScore)).append("\",");
-            sb.append("\"aiSummary\":\"").append(escape(aiSummary)).append("\",");
-            sb.append("\"tags\":[");
-            for (int i = 0; i < extractedTags.size(); i++) {
-                sb.append("\"").append(escape(extractedTags.get(i))).append("\"");
-                if (i < extractedTags.size() - 1) sb.append(",");
-            }
-            sb.append("]}");
-            return sb.toString();
-        }
-
-        private String escape(String val) {
-            if (val == null) return "";
-            return val.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("recommendedRating", recommendedRating);
+            m.put("sentimentLabel", sentimentLabel);
+            m.put("sentimentScore", sentimentScore);
+            m.put("aiSummary", aiSummary);
+            m.put("tags", extractedTags);
+            return Json.toJson(m);
         }
     }
 
-    /**
-     * デフォルト言語(ja)による総合分析
-     */
+    /** デフォルト言語(ja)による総合分析 */
     public static AnalysisResult analyze(String title, String content) {
         return analyze(title, content, "ja");
     }
 
-    /**
-     * 言語指定(ja, ko, en)によるレビュー分析
-     */
+    /** 言語指定(ja, ko, en)によるレビュー分析 */
     public static AnalysisResult analyze(String title, String content, String lang) {
         if (lang == null || lang.trim().isEmpty()) {
             lang = "ja";
         }
 
         AnalysisResult result = new AnalysisResult();
-        String combined = ((title != null ? title : "") + " " + (content != null ? content : "")).toLowerCase();
+        String combined = ((title != null ? title : "") + " " + (content != null ? content : ""))
+                .toLowerCase(Locale.ROOT);
 
         int posCount = 0;
         int negCount = 0;
 
-        for (String pos : POSITIVE_KEYWORDS) {
-            if (combined.contains(pos.toLowerCase())) posCount++;
+        // 肯定語: 否定表現が付いていれば否定として数える
+        for (String kw : POSITIVE_KEYWORDS) {
+            int polarity = sentimentPolarity(combined, kw);
+            if (polarity > 0) posCount++;
+            else if (polarity < 0) negCount++;
+        }
+        // 否定語: 否定表現が付いていれば肯定として数える (例: "not bad")
+        for (String kw : NEGATIVE_KEYWORDS) {
+            int polarity = sentimentPolarity(combined, kw);
+            if (polarity > 0) negCount++;
+            else if (polarity < 0) posCount++;
         }
 
-        for (String neg : NEGATIVE_KEYWORDS) {
-            if (combined.contains(neg.toLowerCase())) negCount++;
-        }
-
-        // 星評価インテリジェンス算出 (基本3点から加減算)
+        // 星評価 (基本3点から加減算し 1~5 に丸める)
         int calculatedRating = 3 + posCount - negCount;
         if (calculatedRating > 5) calculatedRating = 5;
         if (calculatedRating < 1) calculatedRating = 1;
         result.recommendedRating = calculatedRating;
 
-        // 信頼度スコアの判定 (基本60% + 検知シグナル数*8%)
+        // 信頼度スコア (基本60% + 検知シグナル数×8%、上限98%。シグナル無しは50%)
         int totalSignals = posCount + negCount;
         int confidence = (totalSignals > 0) ? Math.min(60 + (totalSignals * 8), 98) : 50;
         result.sentimentScore = confidence + "%";
 
-        // 多言語別ラベリングと要約の生成
         applyI18nLabels(result, calculatedRating, lang);
 
-        // タグ自動抽出インテリジェンス
+        // タグ抽出
         for (String[] rule : TAG_RULES) {
             String tagName = rule[0];
             for (int i = 1; i < rule.length; i++) {
-                if (combined.contains(rule[i].toLowerCase())) {
+                if (containsKeyword(combined, rule[i].toLowerCase(Locale.ROOT))) {
                     if (!result.extractedTags.contains(tagName)) {
                         result.extractedTags.add(tagName);
                     }
@@ -122,7 +143,7 @@ public class ReviewIntelligence {
             }
         }
 
-        // デフォルトタグの付与
+        // デフォルトタグ
         if (result.extractedTags.isEmpty()) {
             if ("ko".equals(lang)) {
                 result.extractedTags.add("#애니감상");
@@ -136,7 +157,52 @@ public class ReviewIntelligence {
         return result;
     }
 
-    // 多言語辞書適用
+    // ---------------------------------------------------------------------
+    //  キーワード判定
+    // ---------------------------------------------------------------------
+
+    /**
+     * キーワードの出現と極性を返す。
+     *   +1 : 出現し、否定されていない
+     *   -1 : 出現し、直前に否定語が付いている (英語のみ)
+     *    0 : 出現しない
+     * 日本語・韓国語などASCII以外のキーワードは単純な部分一致 (否定判定なし)。
+     */
+    static int sentimentPolarity(String lowerText, String keyword) {
+        String kw = keyword.toLowerCase(Locale.ROOT);
+        if (!isAscii(kw)) {
+            return lowerText.contains(kw) ? 1 : 0;
+        }
+        Matcher m = SENTIMENT_PATTERNS.computeIfAbsent(kw, k -> Pattern.compile(
+                "(?<![a-z0-9])(?:(" + NEGATORS + ")\\s+" + FILLERS + ")?" + Pattern.quote(k) + "(?![a-z0-9])"))
+                .matcher(lowerText);
+        if (m.find()) {
+            return (m.group(1) != null) ? -1 : 1;
+        }
+        return 0;
+    }
+
+    /** タグ判定用: ASCIIキーワードは単語境界、それ以外は部分一致。 */
+    static boolean containsKeyword(String lowerText, String lowerKeyword) {
+        if (!isAscii(lowerKeyword)) {
+            return lowerText.contains(lowerKeyword);
+        }
+        return WORD_PATTERNS.computeIfAbsent(lowerKeyword, k -> Pattern.compile(
+                "(?<![a-z0-9])" + Pattern.quote(k) + "(?![a-z0-9])"))
+                .matcher(lowerText).find();
+    }
+
+    private static boolean isAscii(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) > 127) return false;
+        }
+        return true;
+    }
+
+    // ---------------------------------------------------------------------
+    //  多言語ラベル
+    // ---------------------------------------------------------------------
+
     private static void applyI18nLabels(AnalysisResult res, int rating, String lang) {
         if ("ko".equals(lang)) {
             if (rating == 5) {

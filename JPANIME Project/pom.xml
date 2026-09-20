@@ -46,6 +46,34 @@
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
+
+        <!-- [4] HikariCP: JDBCコネクションプール (リクエスト毎の接続生成をなくし、接続数を上限管理する) -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>4.0.3</version>   <!-- Java 8 対応の最終系列 -->
+        </dependency>
+        <!-- HikariCP が利用する SLF4J のログ出力実装 (無いと警告が出るため同梱) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+
+        <!-- [5] Gson: JSONの手動文字列連結をやめ、エスケープ漏れによる構文破壊を防ぐ -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!-- [6] JUnit 4: ReviewIntelligence 等の単体テスト (mvn test) -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <!-- ===================================================

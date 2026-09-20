@@ -295,19 +295,19 @@
     <!-- 1. アニメ作品名入力欄 -->
     <div class="form-group">
       <label for="animeTitle" data-i18n="animeTitleLabel">애니메이션 작품명</label>
-      <input type="text" id="animeTitle" name="animeTitle" placeholder="예: 나의 히어로 아카데미아, 주술회전" required>
+      <input type="text" id="animeTitle" name="animeTitle" maxlength="100" placeholder="예: 나의 히어로 아카데미아, 주술회전" required>
     </div>
 
     <!-- 2. レビュータイトル入力欄 -->
     <div class="form-group">
       <label for="title" data-i18n="postTitleLabel">리뷰 제목</label>
-      <input type="text" id="title" name="title" placeholder="리뷰 요약 또는 개성 넘치는 제목을 입력하세요" required>
+      <input type="text" id="title" name="title" maxlength="100" placeholder="리뷰 요약 또는 개성 넘치는 제목을 입력하세요" required>
     </div>
 
     <!-- 3. レビュー本文テキストエリア -->
     <div class="form-group">
       <label for="content" data-i18n="postContentLabel">감상평 및 본문 내용</label>
-      <textarea id="content" name="content" placeholder="애니메이션에 대한 솔직하고 열정적인 감상을 남겨주세요 (PLUS ULTRA!)" required></textarea>
+      <textarea id="content" name="content" maxlength="1000" placeholder="애니메이션에 대한 솔직하고 열정적인 감상을 남겨주세요 (PLUS ULTRA!)" required></textarea>
     </div>
 
     <!-- 4. AI感情分析＆おすすめ星点数サポーターパネル -->
@@ -339,7 +339,7 @@
     <!-- 6. サムネイル画像アップロード & プレビュー表示枠 -->
     <div class="form-group">
       <label for="animeImage" data-i18n="imageLabel">작품 포스터 / 스크린샷 첨부</label>
-      <input type="file" id="animeImage" name="animeImage" accept="image/*" onchange="previewImage(event)">
+      <input type="file" id="animeImage" name="animeImage" accept="image/jpeg,image/png,image/gif,image/webp" onchange="previewImage(event)">
       <div class="preview-box" id="previewBox">
         <img id="imgPreview" src="" alt="Preview">
       </div>
@@ -375,6 +375,7 @@
     const params = new URLSearchParams();
     params.append('title', title);
     params.append('content', content);
+    params.append('lang', (typeof currentLang !== 'undefined' && currentLang) ? currentLang : 'ja'); // 分析結果の言語
 
     // AI分析APIエンドポイントへの通信
     fetch('api/intelligence', {
@@ -401,7 +402,7 @@
 
               // 抽出されたキーワードタグのバッジ生成
               const tagsBox = document.getElementById('aiTagsContainer');
-              tagsBox.innerHTML = '<b>추출 태그:</b> ';
+              tagsBox.innerHTML = '<b>' + ((typeof i18n !== 'undefined' && i18n[currentLang] && i18n[currentLang].aiTagsLabel) || 'Tags:') + '</b> ';
               data.tags.forEach(tag => {
                 const badge = document.createElement('span');
                 badge.className = 'ai-tag-badge';

@@ -9,44 +9,42 @@ import javax.servlet.http.HttpServletResponse;
 import common.ReviewIntelligence;
 import common.ReviewIntelligence.AnalysisResult;
 
+/**
+ * 【サーブレット名】IntelligenceServlet
+ * 【URLマッピング】/api/intelligence
+ * 【機能概要】
+ *   投稿テキスト(title, content)のルールベース感情分析・タグ抽出結果を JSON で返す。
+ *   lang パラメータ(ja / ko / en)で結果ラベルの言語を切り替える。
+ *
+ * 【v2 の変更点】
+ *   - lang パラメータを読み取るように修正 (v1 は常に日本語で返していた)
+ *   - 入力長を制限 (過大なテキストによる無駄な処理を防止)
+ */
 @WebServlet("/api/intelligence")
 public class IntelligenceServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    // POST: 投稿テキストのAIリアルタイム自然言語解析
+    private static final int MAX_INPUT_LENGTH = 5000;
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
 
-        String title = request.getParameter("title");
-        String content = request.getParameter("content");
-
-        // AI 知能型分析の実行
-        AnalysisResult analysis = ReviewIntelligence.analyze(title, content);
-
-        StringBuilder json = new StringBuilder("{");
-        json.append("\"recommendedRating\":").append(analysis.recommendedRating).append(",")
-                .append("\"sentimentLabel\":\"").append(escapeJson(analysis.sentimentLabel)).append("\",")
-                .append("\"sentimentScore\":\"").append(escapeJson(analysis.sentimentScore)).append("\",")
-                .append("\"aiSummary\":\"").append(escapeJson(analysis.aiSummary)).append("\",")
-                .append("\"tags\":[");
-
-        for (int i = 0; i < analysis.extractedTags.size(); i++) {
-            if (i > 0) json.append(",");
-            json.append("\"").append(escapeJson(analysis.extractedTags.get(i))).append("\"");
+        String title = limit(request.getParameter("title"));
+        String content = limit(request.getParameter("content"));
+        String lang = request.getParameter("lang");
+        if (!"ko".equals(lang) && !"en".equals(lang)) {
+            lang = "ja"; // 未指定・不正値は日本語
         }
-        json.append("]}");
 
-        response.getWriter().write(json.toString());
+        AnalysisResult analysis = ReviewIntelligence.analyze(title, content, lang);
+        response.getWriter().write(analysis.toJson());
     }
 
-    private String escapeJson(String val) {
-        if (val == null) return "";
-        return val.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "")
-                .replace("\n", "\\n");
+    private static String limit(String s) {
+        if (s == null) return "";
+        return s.length() > MAX_INPUT_LENGTH ? s.substring(0, MAX_INPUT_LENGTH) : s;
     }
 }

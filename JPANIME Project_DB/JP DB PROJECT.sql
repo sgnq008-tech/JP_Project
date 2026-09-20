@@ -31,14 +31,14 @@ BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE SEQ_COMMENT_CNO'; EXCEPTION WHEN OTHERS T
 
 -- ===================================================
 -- 1. ユーザー管理テーブル作成 (USERS)
--- 【機能】会員登録、ログイン認証、セッション管理を行う基盤テーブル
+-- 【機能】会員登録、ログイン認証、セッション管理を行う基盤テーブル (パスワードは BCrypt ハッシュで保存)
 -- ===================================================
 CREATE TABLE USERS (
-    USER_ID   VARCHAR2(50) PRIMARY KEY,      -- [ユーザーID] 主キー。英数字4〜20文字。重複不可
-    USER_PW   VARCHAR2(100) NOT NULL,        -- [パスワード] 必須入力。暗号化または平文パスワード
-    PASSWORD  VARCHAR2(100),                 -- [パスワード互換カラム] 既存サーブレットの参照名差異(USER_PW / PASSWORD)を両立するための予備カラム
-    USER_NAME VARCHAR2(100) NOT NULL         -- [ヒーローネーム/表示名] サイト上に表示されるニックネーム
+    USER_ID   VARCHAR2(50) PRIMARY KEY,      -- [ユーザーID] 主キー。英数字4〜20文字。重複不可 (大文字小文字は区別)
+    USER_PW   VARCHAR2(100) NOT NULL,        -- [パスワード] BCryptハッシュ(60文字)。平文は保存しない (v2)
+    USER_NAME VARCHAR2(100 CHAR) NOT NULL    -- [ヒーローネーム/表示名] サイト上に表示されるニックネーム
 );
+-- ※ v1 にあった互換カラム PASSWORD は廃止。既存DBの移行は migration_v2.sql を参照。
 
 -- ===================================================
 -- 2. アニメレビュー掲示板テーブル作成 (ANIME_REVIEWS)
@@ -46,9 +46,9 @@ CREATE TABLE USERS (
 -- ===================================================
 CREATE TABLE ANIME_REVIEWS (
     BNO          NUMBER PRIMARY KEY,                                  -- [レビュー番号] 主キー。シーケンスにより1から自動採番
-    ANIME_TITLE  VARCHAR2(200) NOT NULL,                              -- [アニメ作品名] 必須入力。対象のアニメタイトル
-    TITLE        VARCHAR2(200) NOT NULL,                              -- [レビュー見出し] 必須入力。投稿のメインタイトル
-    CONTENT      VARCHAR2(4000) NOT NULL,                             -- [レビュー本文] JDBCでの取得エラー(CLOBストリーム問題)を防ぐためVARCHAR2(4000)に最適化
+    ANIME_TITLE  VARCHAR2(200 CHAR) NOT NULL,                              -- [アニメ作品名] 必須入力。対象のアニメタイトル
+    TITLE        VARCHAR2(200 CHAR) NOT NULL,                              -- [レビュー見出し] 必須入力。投稿のメインタイトル
+    CONTENT      VARCHAR2(4000 CHAR) NOT NULL,                             -- [レビュー本文] JDBCでの取得エラー(CLOBストリーム問題)を防ぐためVARCHAR2(4000)に最適化
     RATING       NUMBER(1) DEFAULT 5 CHECK (RATING BETWEEN 1 AND 5),  -- [評価点数] 1〜5の整数値のみ許可するCHECK制約。デフォルトは5
     IMAGE_FILE   VARCHAR2(255),                                       -- [画像ファイル名] サーバーの/uploadsディレクトリに保存されたUUIDファイル名
     HIT_COUNT    NUMBER DEFAULT 0,                                    -- [閲覧数] 詳細画面(detail.html)照会時にインクリメント(+1)されるカウンター
@@ -73,7 +73,7 @@ CREATE TABLE REVIEW_COMMENTS (
     CNO       NUMBER PRIMARY KEY,                                     -- [コメント番号] 主キー。シーケンスにより1から自動採番
     BNO       NUMBER NOT NULL,                                        -- [対象レビュー番号] どのレビューに対するコメントかを紐付ける外部キー
     WRITER    VARCHAR2(50) NOT NULL,                                  -- [コメント作成者ID] コメントを投稿したユーザーのUSER_ID
-    CONTENT   VARCHAR2(1000) NOT NULL,                                -- [コメント本文] 最大1000バイトのテキスト
+    CONTENT   VARCHAR2(1000 CHAR) NOT NULL,                                -- [コメント本文] 最大1000バイトのテキスト
     REG_DATE  DATE DEFAULT SYSDATE,                                   -- [登録日時] コメント投稿日時(デフォルト: 現在日時)
     CONSTRAINT FK_COMMENT_BNO FOREIGN KEY (BNO) 
         REFERENCES ANIME_REVIEWS(BNO) ON DELETE CASCADE,              -- [連動削除制約] レビューが削除された場合、紐づくコメントも自動削除
@@ -111,17 +111,22 @@ CREATE INDEX IDX_COMMENT_BNO ON REVIEW_COMMENTS(BNO);
 -- ---------------------------------------------------
 -- [6-1] テストユーザー登録 (login.htmlのワンクリックログインと連動)
 -- ---------------------------------------------------
+-- ※ デモアカウントの初期パスワードはあえて平文('1234')で投入しています。
+--   アプリは「保存値がBCrypt形式でない場合のみ平文照合 → 成功したら BCrypt へ自動置換」する
+--   遅延マイグレーション(LoginServlet)を実装しているため、初回ログイン後は DB 上でハッシュ化されます。
+--   (公開環境ではこのシード自体を使わず、パスワードを変更してください)
+
 -- 管理者アカウント
-INSERT INTO USERS (USER_ID, USER_PW, PASSWORD, USER_NAME) 
-VALUES ('admin', '1234', '1234', 'All Might (管理者)');
+INSERT INTO USERS (USER_ID, USER_PW, USER_NAME) 
+VALUES ('admin', '1234', 'All Might (管理者)');
 
 -- 一般審査用アカウント (デク)
-INSERT INTO USERS (USER_ID, USER_PW, PASSWORD, USER_NAME) 
-VALUES ('test1', '1234', '1234', 'Deku (緑谷出久)');
+INSERT INTO USERS (USER_ID, USER_PW, USER_NAME) 
+VALUES ('test1', '1234', 'Deku (緑谷出久)');
 
 -- 一般ユーザーアカウント (健二)
-INSERT INTO USERS (USER_ID, USER_PW, PASSWORD, USER_NAME) 
-VALUES ('kenji', '1234', '1234', 'Kenji (健二)');
+INSERT INTO USERS (USER_ID, USER_PW, USER_NAME) 
+VALUES ('kenji', '1234', 'Kenji (健二)');
 
 -- ---------------------------------------------------
 -- [6-2] サンプルレビュー登録 (board.htmlのカードグリッド表示用)

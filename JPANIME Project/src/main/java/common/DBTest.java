@@ -16,9 +16,9 @@ public class DBTest {
     public static void main(String[] args) {
         System.out.println("========== [AniLog DB 自動診断開始] ==========");
 
-        // [1] 認証アカウント情報 (DDLスクリプトを実行したOracleのユーザー名/パスワード)
-        String user = "scott";
-        String pass = "tiger";
+        // [1] 認証アカウント情報 (環境変数 JPANIME_DB_USER / JPANIME_DB_PASS。未指定なら開発用デフォルト)
+        String user = System.getenv("JPANIME_DB_USER") != null ? System.getenv("JPANIME_DB_USER") : "scott";
+        String pass = System.getenv("JPANIME_DB_PASS") != null ? System.getenv("JPANIME_DB_PASS") : "tiger";
 
         // [2] 接続試行対象のOracle JDBC URL候補リスト
         // ※ Oracleのバージョン(11g/18c/21c/Enterprise)やインストール設定による識別子の差異を網羅

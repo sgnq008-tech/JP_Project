@@ -208,19 +208,19 @@
     <!-- 1. 希望ユーザーID入力欄 -->
     <div class="form-group">
       <label class="form-label" id="t-idLabel">희망 히어로 아이디 (ID)</label>
-      <input type="text" name="userId" id="userId" class="form-input" placeholder="영문/숫자 4~20자" required>
+      <input type="text" name="userId" id="userId" class="form-input" placeholder="영문/숫자 4~20자" pattern="[A-Za-z0-9]{4,20}" maxlength="20" required>
     </div>
 
     <!-- 2. パスワード入力欄 -->
     <div class="form-group">
       <label class="form-label" id="t-pwLabel">비밀번호 (PASSWORD)</label>
-      <input type="password" name="userPw" id="userPw" class="form-input" placeholder="비밀번호 입력 (4자 이상)" required>
+      <input type="password" name="userPw" id="userPw" class="form-input" placeholder="비밀번호 입력 (4자 이상)" minlength="4" maxlength="72" required>
     </div>
 
     <!-- 3. ヒーローネーム(表示ニックネーム)入力欄 -->
     <div class="form-group">
       <label class="form-label" id="t-nameLabel">히어로 네임 (닉네임)</label>
-      <input type="text" name="userName" id="userName" class="form-input" placeholder="활동 닉네임 입력" required>
+      <input type="text" name="userName" id="userName" class="form-input" placeholder="활동 닉네임 입력" maxlength="30" required>
     </div>
 
     <!-- 4. 送信ボタン -->
@@ -306,6 +306,20 @@
     document.getElementById('t-loginNotice').innerText = t.loginNotice;
     document.getElementById('t-loginLink').innerText = t.loginLink;
   }
+
+  /**
+   * サーバー側の入力検証エラー (?error=empty / ?error=invalid) の通知
+   * 【機能】JoinServlet がクライアント検証をすり抜けた不正入力を弾いた場合にメッセージを表示します。
+   */
+  (function showJoinError() {
+    const code = new URLSearchParams(location.search).get('error');
+    const messages = {
+      ko: { empty: "모든 항목을 입력해 주세요.", invalid: "입력 형식을 확인해 주세요. (ID: 영문/숫자 4~20자, 비밀번호: 4자 이상, 닉네임: 30자 이내)" },
+      ja: { empty: "すべての項目を入力してください。", invalid: "入力形式をご確認ください。(ID: 英数字4〜20文字、パスワード: 4文字以上、ニックネーム: 30文字以内)" },
+      en: { empty: "Please fill in every field.", invalid: "Please check the format. (ID: 4-20 alphanumeric, password: 4+ chars, nickname: up to 30 chars)" }
+    };
+    if (code && messages[currentLang][code]) alert(messages[currentLang][code]);
+  })();
 </script>
 </body>
 </html>
